@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "739553931342",
+    "project_id": "sitepulse-6245f",
+    "storage_bucket": "sitepulse-6245f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:739553931342:android:1cecc9ed696e5ded5d131f",
+        "android_client_info": {
+          "package_name": "com.sitepulse.site_pulse"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAW8wrjwhTr0Buf4Ibnml5kyyHtnpkwe-k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

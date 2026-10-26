@@ -1,0 +1,121 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:site_pulse/core/constants/thresholds.dart';
+import 'package:site_pulse/data/models/models.dart';
+import 'package:site_pulse/data/providers.dart';
+import 'package:site_pulse/data/repositories/fakes/fakes.dart';
+import 'package:site_pulse/data/repositories/repositories.dart';
+
+void main() {
+  group('Fake Repositories & Riverpod Providers', () {
+    test('Riverpod container successfully provides all repositories', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(container.read(authRepositoryProvider), isA<AuthRepository>());
+      expect(container.read(siteRepositoryProvider), isA<SiteRepository>());
+      expect(container.read(workerRepositoryProvider), isA<WorkerRepository>());
+      expect(container.read(attendanceRepositoryProvider), isA<AttendanceRepository>());
+      expect(container.read(materialRepositoryProvider), isA<MaterialRepository>());
+      expect(container.read(incidentRepositoryProvider), isA<IncidentRepository>());
+    });
+
+    test('SiteRepository is seeded with 3 sites', () async {
+      final repo = FakeSiteRepository();
+      final sites = await repo.watchSites().first;
+
+      expect(sites.length, 3);
+      expect(sites.map((s) => s.id), containsAll(['site-1', 'site-2', 'site-3']));
+    });
+
+    test('WorkerRepository is seeded with ~10 workers each for 3 sites', () async {
+      final repo = FakeWorkerRepository();
+      final site1Workers = await repo.watchWorkers('site-1').first;
+      final site2Workers = await repo.watchWorkers('site-2').first;
+      final site3Workers = await repo.watchWorkers('site-3').first;
+      final allWorkers = await repo.watchAllWorkers().first;
+
+      expect(site1Workers.length, 10);
+      expect(site2Workers.length, 10);
+      expect(site3Workers.length, 10);
+      expect(allWorkers.length, 30);
+    });
+
+    test('MaterialRepository is seeded with materials having at least one below threshold', () async {
+      final repo = FakeMaterialRepository();
+      final materials = await repo.watchMaterials().first;
+
+      expect(materials.isNotEmpty, isTrue);
+      final lowStockMaterials = materials.where(isLowStock).toList();
+      expect(lowStockMaterials.length, greaterThanOrEqualTo(1));
+      expect(lowStockMaterials.first.id, 'mat-1');
+    });
+
+    test('MaterialRepository logUsage decrements currentStock and logs usage in one operation', () async {
+      final repo = FakeMaterialRepository();
+      final initial = await repo.watchMaterial('mat-2').first;
+      expect(initial, isNotNull);
+      final initialStock = initial!.currentStock;
+
+      // Fire and forget write returns id immediately
+      final logId = repo.logUsage(
+        materialId: 'mat-2',
+        qtyUsed: 10.0,
+      );
+      expect(logId, isNotEmpty);
+
+      final updated = await repo.watchMaterial('mat-2').first;
+      expect(updated?.currentStock, initialStock - 10.0);
+
+      final logs = await repo.watchMaterialLogs(materialId: 'mat-2').first;
+      expect(logs.any((l) => l.id == logId && l.qtyUsed == 10.0), isTrue);
+    });
+
+    test('IncidentRepository is seeded with 2 incidents (one high severity)', () async {
+      final repo = FakeIncidentRepository();
+      final incidents = await repo.watchIncidents().first;
+
+      expect(incidents.length, 2);
+      final highIncidents = incidents.where((inc) => isHighSeverity(inc.severity)).toList();
+      expect(highIncidents.length, 1);
+      expect(highIncidents.first.severity, Severity.high);
+    });
+
+    test('AttendanceRepository uses siteId_workerId_yyyymmdd and returns id immediately', () async {
+      final repo = FakeAttendanceRepository();
+      final date = DateTime(2026, 10, 26);
+      const siteId = 'site-1';
+      const workerId = 'w-109';
+      final expectedId = '${siteId}_${workerId}_20261026';
+
+      final entry = AttendanceEntry(
+        id: expectedId,
+        workerId: workerId,
+        date: date,
+        status: AttendanceStatus.present,
+        siteId: siteId,
+      );
+
+      final returnedId = repo.recordAttendance(entry);
+      expect(returnedId, expectedId);
+
+      final attendanceList = await repo.watchAttendance(siteId: siteId, date: date).first;
+      expect(attendanceList.any((a) => a.id == expectedId), isTrue);
+    });
+
+    test('Repository writes report failures through errorStream without awaiting', () async {
+      final repo = FakeMaterialRepository();
+      final errors = <RepositoryError>[];
+      final sub = repo.errorStream.listen(errors.add);
+      addTearDown(sub.cancel);
+
+      // Invalid materialId: should emit error to stream
+      final logId = repo.logUsage(materialId: 'non-existent', qtyUsed: 5.0);
+      expect(logId, isNotEmpty);
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(errors.isNotEmpty, isTrue);
+      expect(errors.first.operation, 'logUsage');
+    });
+  });
+}

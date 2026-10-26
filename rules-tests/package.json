@@ -1,0 +1,12 @@
+{
+  "name": "rules-tests",
+  "version": "1.0.0",
+  "description": "Firestore security rules unit tests",
+  "scripts": {
+    "test": "mocha test.js --timeout 15000 --exit"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "mocha": "^10.7.3"
+  }
+}

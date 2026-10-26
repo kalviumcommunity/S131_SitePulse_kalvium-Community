@@ -126,3 +126,6 @@ service-account.json
 .env
 .env.*
 !.env.example
+
+# Node
+node_modules/

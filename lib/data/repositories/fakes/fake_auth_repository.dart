@@ -67,6 +67,20 @@ class FakeAuthRepository implements AuthRepository {
     }
   }
 
+  @override
+  Future<AppUser> signIn(String email, String password) async {
+    final normalized = email.trim().toLowerCase();
+    final user = _users.values.firstWhere(
+      (u) =>
+          u.uid.toLowerCase() == normalized ||
+          u.name.toLowerCase() == normalized,
+      orElse: () => _currentUser ?? (defaultUsers.isNotEmpty ? defaultUsers.first : const AppUser(uid: 'user-sup-1', role: UserRole.supervisor, name: 'Suresh Kumar', siteId: 'site-1')),
+    );
+    _currentUser = user;
+    _userController.add(_currentUser);
+    return user;
+  }
+
   void dispose() {
     _userController.close();
     _errorController.close();

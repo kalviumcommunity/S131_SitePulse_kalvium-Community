@@ -5,3 +5,4 @@ export 'worker_repository.dart';
 export 'attendance_repository.dart';
 export 'material_repository.dart';
 export 'incident_repository.dart';
+export 'firestore/firestore_auth_repository.dart';

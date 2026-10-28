@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:site_pulse/data/repositories/auth_repository.dart';
@@ -13,8 +14,11 @@ import 'package:site_pulse/data/repositories/write_failure_sink.dart';
 import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/data/repositories/firestore/firestore.dart';
 
-/// Set to `false` to switch from in-memory fakes to real Firestore repositories.
-const bool useFakes = true;
+/// Tests use in-memory repositories unless USE_FAKES is explicitly defined.
+final bool useFakes =
+    const bool.fromEnvironment('USE_FAKES') ||
+    (!const bool.hasEnvironment('USE_FAKES') &&
+        Platform.environment['FLUTTER_TEST'] == 'true');
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final repository = FakeAuthRepository();

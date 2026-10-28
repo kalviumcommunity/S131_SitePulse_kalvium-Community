@@ -9,6 +9,7 @@ import 'features/pm/dashboard/pm_dashboard_screen.dart';
 import 'features/supervisor/home/supervisor_home_screen.dart';
 import 'features/supervisor/roster/roster_screen.dart';
 import 'features/supervisor/attendance/attendance_screen.dart';
+import 'features/supervisor/material/material_usage_screen.dart';
 
 /// Global repository instance shared between router and auth features
 AuthRepository _globalAuthRepository = FakeAuthRepository(
@@ -83,6 +84,10 @@ GoRouter buildRouter({
       GoRoute(
         path: '/supervisor/home',
         builder: (context, state) => const SupervisorHomeScreen(),
+      ),
+      GoRoute(
+        path: '/supervisor/material',
+        builder: (context, state) => const MaterialUsageScreen(),
       ),
       GoRoute(
         path: '/supervisor/attendance',

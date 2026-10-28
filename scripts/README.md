@@ -55,6 +55,23 @@ node seed.js --reset
 npm run seed:reset
 ```
 
+## Evidence Scripts
+
+Run these read-only scripts from the `scripts` directory after configuring Firebase credentials or the Firestore emulator as described above.
+
+### Check Incident Completeness
+Reads incidents under every site, reports totals and any invalid incident IDs, and exits with code 1 if it finds an incident missing a valid severity, a description of at least 10 characters, or an `occurredAt` timestamp.
+```powershell
+node .\check-incidents.js
+```
+
+### Count Documents and Check Material Stock
+Reports counts for workers, attendance, material logs, and incidents per site, plus each material's current stock. Optionally limit attendance counts by its `dateKey`:
+```powershell
+node .\count-docs.js
+node .\count-docs.js --date 2026-10-28
+```
+
 ## Seeded Test Accounts
 
 All accounts share the default password: **`SitePulse#2026`**

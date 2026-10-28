@@ -1,8 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
+
 DateTime? _parseDateTime(dynamic value) {
   if (value == null) return null;
   if (value is DateTime) return value;
   if (value is String) return DateTime.tryParse(value);
   if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+  if (value is Timestamp) return value.toDate();
   try {
     final dynamic dynamicVal = value;
     if (dynamicVal.toDate is Function) {
@@ -108,6 +111,53 @@ class AttendanceEntry {
       siteId: map['siteId'] as String?,
       hasPendingWrites:
           (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
+    );
+  }
+
+  /// Format date as yyyy-MM-dd string for Firestore dateKey field & range queries.
+  static String dateKeyFromDate(DateTime d) {
+    final y = d.year.toString().padLeft(4, '0');
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '$y-$m-$day';
+  }
+
+  /// Firestore document data (excludes id, siteId, hasPendingWrites).
+  Map<String, dynamic> toFirestore({required String createdBy}) {
+    return {
+      'workerId': workerId,
+      'status': status.name,
+      'dateKey': dateKeyFromDate(date),
+      'updatedAt': Timestamp.now(),
+      'createdBy': createdBy,
+    };
+  }
+
+  /// Construct from a Firestore document snapshot.
+  factory AttendanceEntry.fromFirestore(
+    String docId,
+    String siteId,
+    Map<String, dynamic> data, {
+    bool hasPendingWrites = false,
+  }) {
+    // Recover date from dateKey string (yyyy-MM-dd) for the model's DateTime field
+    DateTime date;
+    final dateKey = data['dateKey'] as String?;
+    if (dateKey != null && dateKey.length == 10) {
+      date = DateTime.tryParse(dateKey) ?? DateTime.now();
+    } else {
+      date = _parseDateTime(data['updatedAt']) ?? DateTime.now();
+    }
+
+    return AttendanceEntry(
+      id: docId,
+      workerId: data['workerId'] as String? ?? '',
+      date: date,
+      status: data['status'] is String
+          ? AttendanceStatus.fromString(data['status'] as String)
+          : AttendanceStatus.present,
+      siteId: siteId,
+      hasPendingWrites: hasPendingWrites,
     );
   }
 

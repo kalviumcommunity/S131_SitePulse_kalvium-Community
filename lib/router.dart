@@ -5,9 +5,13 @@ import 'package:site_pulse/data/models/app_user.dart';
 import 'package:site_pulse/data/repositories/auth_repository.dart';
 import 'package:site_pulse/data/repositories/fakes/fake_auth_repository.dart';
 import 'features/auth/login_screen.dart';
+import 'features/pm/site_detail/pm_site_detail_screen.dart';
 import 'features/pm/dashboard/pm_dashboard_screen.dart';
 import 'features/supervisor/home/supervisor_home_screen.dart';
 import 'features/supervisor/roster/roster_screen.dart';
+import 'features/supervisor/attendance/attendance_screen.dart';
+import 'features/supervisor/material/material_usage_screen.dart';
+import 'features/supervisor/incident/incident_screen.dart';
 
 /// Global repository instance shared between router and auth features
 AuthRepository _globalAuthRepository = FakeAuthRepository(
@@ -84,12 +88,31 @@ GoRouter buildRouter({
         builder: (context, state) => const SupervisorHomeScreen(),
       ),
       GoRoute(
+        path: '/supervisor/material',
+        builder: (context, state) => const MaterialUsageScreen(),
+      ),
+      GoRoute(
+        path: '/supervisor/attendance',
+        builder: (context, state) => const AttendanceScreen(),
+      ),
+      GoRoute(
         path: '/supervisor/roster',
         builder: (context, state) => const RosterScreen(),
       ),
       GoRoute(
+        path: '/supervisor/incident',
+        builder: (context, state) => const IncidentScreen(),
+      ),
+      GoRoute(
         path: '/pm/dashboard',
         builder: (context, state) => const PmDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/pm/site/:siteId',
+        builder: (context, state) {
+          final siteId = state.pathParameters['siteId'] ?? '';
+          return PmSiteDetailScreen(siteId: siteId);
+        },
       ),
     ],
   );

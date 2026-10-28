@@ -5,3 +5,4 @@ export 'attendance_entry.dart';
 export 'material.dart';
 export 'material_log.dart';
 export 'incident.dart';
+export 'write_failure.dart';

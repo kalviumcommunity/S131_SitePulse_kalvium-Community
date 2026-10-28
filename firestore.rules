@@ -44,7 +44,8 @@ service cloud.firestore {
       // attendance: PM reads all; assigned supervisor can read, create and update; no deletes.
       match /attendance/{attendanceId} {
         allow read: if isPM() || isSupervisor(siteId);
-        allow create, update: if isSupervisor(siteId);
+        allow create, update: if isSupervisor(siteId)
+          && request.resource.data.status in ['present', 'absent', 'half'];
         allow delete: if false;
       }
 
@@ -52,7 +53,9 @@ service cloud.firestore {
       match /materials/{materialId} {
         allow read: if isPM() || isSupervisor(siteId);
         allow update: if isSupervisor(siteId)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentStock']);
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentStock'])
+          && request.resource.data.currentStock is number
+          && request.resource.data.currentStock >= 0;
         allow create, delete: if false;
       }
 

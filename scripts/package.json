@@ -1,0 +1,13 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "description": "Seed scripts for SitePulse Firestore and Firebase Auth",
+  "main": "seed.js",
+  "scripts": {
+    "seed": "node seed.js",
+    "seed:reset": "node seed.js --reset"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

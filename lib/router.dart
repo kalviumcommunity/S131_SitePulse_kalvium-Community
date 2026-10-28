@@ -10,6 +10,7 @@ import 'features/supervisor/home/supervisor_home_screen.dart';
 import 'features/supervisor/roster/roster_screen.dart';
 import 'features/supervisor/attendance/attendance_screen.dart';
 import 'features/supervisor/material/material_usage_screen.dart';
+import 'features/supervisor/incident/incident_screen.dart';
 
 /// Global repository instance shared between router and auth features
 AuthRepository _globalAuthRepository = FakeAuthRepository(
@@ -96,6 +97,10 @@ GoRouter buildRouter({
       GoRoute(
         path: '/supervisor/roster',
         builder: (context, state) => const RosterScreen(),
+      ),
+      GoRoute(
+        path: '/supervisor/incident',
+        builder: (context, state) => const IncidentScreen(),
       ),
       GoRoute(
         path: '/pm/dashboard',

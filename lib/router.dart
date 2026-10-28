@@ -5,6 +5,7 @@ import 'package:site_pulse/data/models/app_user.dart';
 import 'package:site_pulse/data/repositories/auth_repository.dart';
 import 'package:site_pulse/data/repositories/fakes/fake_auth_repository.dart';
 import 'features/auth/login_screen.dart';
+import 'features/pm/site_detail/pm_site_detail_screen.dart';
 import 'features/pm/dashboard/pm_dashboard_screen.dart';
 import 'features/supervisor/home/supervisor_home_screen.dart';
 import 'features/supervisor/roster/roster_screen.dart';
@@ -105,6 +106,13 @@ GoRouter buildRouter({
       GoRoute(
         path: '/pm/dashboard',
         builder: (context, state) => const PmDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/pm/site/:siteId',
+        builder: (context, state) {
+          final siteId = state.pathParameters['siteId'] ?? '';
+          return PmSiteDetailScreen(siteId: siteId);
+        },
       ),
     ],
   );

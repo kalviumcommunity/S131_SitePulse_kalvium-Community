@@ -65,6 +65,34 @@ class Worker {
     );
   }
 
+  /// Firestore document data (excludes id, siteId, hasPendingWrites).
+  Map<String, dynamic> toFirestore() {
+    return {
+      'name': name,
+      'trade': trade,
+      'workerCode': workerCode,
+      'active': active,
+    };
+  }
+
+  /// Construct from a Firestore document snapshot.
+  factory Worker.fromFirestore(
+    String docId,
+    String siteId,
+    Map<String, dynamic> data, {
+    bool hasPendingWrites = false,
+  }) {
+    return Worker(
+      id: docId,
+      name: data['name'] as String? ?? '',
+      trade: data['trade'] as String? ?? '',
+      workerCode: data['workerCode'] as String? ?? '',
+      active: data['active'] as bool? ?? true,
+      siteId: siteId,
+      hasPendingWrites: hasPendingWrites,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

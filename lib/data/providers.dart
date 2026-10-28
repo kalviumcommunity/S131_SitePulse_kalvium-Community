@@ -38,9 +38,15 @@ final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
 });
 
 final materialRepositoryProvider = Provider<MaterialRepository>((ref) {
-  return FakeMaterialRepository();
+  if (useFakes) return FakeMaterialRepository();
+  final repository = FirestoreMaterialRepository();
+  ref.onDispose(repository.dispose);
+  return repository;
 });
 
 final incidentRepositoryProvider = Provider<IncidentRepository>((ref) {
-  return FakeIncidentRepository();
+  if (useFakes) return FakeIncidentRepository();
+  final repository = FirestoreIncidentRepository();
+  ref.onDispose(repository.dispose);
+  return repository;
 });

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 
-/// Modern Ambient Background for Site Pulse dashboards and pages.
-/// Features a subtle top-violet ambient wash and soft radial orbs
-/// that give cards depth and polish across the entire application.
+/// Modern Dark Ambient Background for Site Pulse dashboards and pages.
+/// Creates high contrast for white cards and buttons so they look intensely enhanced.
 class AppPageBackground extends StatelessWidget {
   final Widget child;
 
@@ -13,16 +12,16 @@ class AppPageBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFFF5F5F7),
+        color: Color(0xFF09090B),
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFFEDE9FE), // Soft Violet-100 top ambient wash
-            Color(0xFFF3F2F8), // Smooth ambient fade
-            Color(0xFFF6F6F9), // Crisp neutral bottom
+            Color(0xFF130E20), // Deep violet-slate ambient top
+            Color(0xFF0C0A12), // Deep obsidian body
+            Color(0xFF09090B), // Zinc-950 base
           ],
-          stops: [0.0, 0.18, 1.0],
+          stops: [0.0, 0.45, 1.0],
         ),
       ),
       child: Stack(
@@ -33,16 +32,16 @@ class AppPageBackground extends StatelessWidget {
               child: Stack(
                 children: [
                   Positioned(
-                    top: -40,
+                    top: -20,
                     right: -30,
                     child: Container(
-                      width: 220,
-                      height: 220,
+                      width: 260,
+                      height: 260,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            AppColors.primary.withValues(alpha: 0.10),
+                            AppColors.primary.withValues(alpha: 0.22),
                             Colors.transparent,
                           ],
                         ),
@@ -50,16 +49,16 @@ class AppPageBackground extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    top: 180,
+                    top: 240,
                     left: -40,
                     child: Container(
-                      width: 180,
-                      height: 180,
+                      width: 220,
+                      height: 220,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            AppColors.primaryLight.withValues(alpha: 0.08),
+                            const Color(0xFF6366F1).withValues(alpha: 0.16),
                             Colors.transparent,
                           ],
                         ),

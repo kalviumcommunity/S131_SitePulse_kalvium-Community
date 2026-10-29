@@ -347,6 +347,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
                   'Daily Actions',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                 ),
               ),
@@ -414,6 +415,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
                       'Recent Activity Feed',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                     ),
                     const Spacer(),
@@ -421,7 +423,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
                       'Latest 10 items',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: Colors.white.withValues(alpha: 0.65),
                       ),
                     ),
                   ],

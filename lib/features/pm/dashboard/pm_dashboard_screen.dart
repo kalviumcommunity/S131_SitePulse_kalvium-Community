@@ -392,6 +392,7 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                       ),
                       const Spacer(),
@@ -399,7 +400,7 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                         'Tap site to inspect',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: Colors.white.withValues(alpha: 0.65),
                         ),
                       ),
                     ],

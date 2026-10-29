@@ -54,22 +54,6 @@ class FakeSiteRepository implements SiteRepository {
   }
 
   @override
-  String createOrUpdateSite(Site site) {
-    if (site.id.isEmpty) {
-      _errorController.add(
-        const RepositoryError(
-          operation: 'createOrUpdateSite',
-          message: 'Site id cannot be empty',
-        ),
-      );
-      return '';
-    }
-    _sites[site.id] = site;
-    _sitesController.add(_sites.values.toList());
-    return site.id;
-  }
-
-  @override
   Stream<RepositoryError> get errorStream => _errorController.stream;
 
   void dispose() {

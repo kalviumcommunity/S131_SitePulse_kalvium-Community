@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
@@ -92,7 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // ── Background: deep graphite-zinc with a subtle violet gradient wash
+          // ── Background: Deep Zinc-950 slate canvas
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -100,17 +101,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 end: Alignment.bottomRight,
                 colors: [
                   Color(0xFF09090B), // Zinc-950
-                  Color(0xFF18101F), // Zinc-950 + violet bleed
-                  Color(0xFF0F0A18), // deep violet-black
+                  Color(0xFF140F22), // Deep violet-black
+                  Color(0xFF09090B), // Zinc-950
                 ],
               ),
             ),
           ),
 
-          // ── Subtle violet glow orb top-right
+          // ── Ambient Glow Orb: Violet highlight (top-right of form)
           Positioned(
-            top: -80,
-            right: -60,
+            top: 100,
+            right: -40,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.35),
+                    AppColors.primary.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // ── Ambient Glow Orb: Electric Indigo highlight (bottom-left of form)
+          Positioned(
+            bottom: 80,
+            left: -50,
             child: Container(
               width: 260,
               height: 260,
@@ -118,50 +138,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.primary.withValues(alpha: 0.25),
-                    AppColors.primary.withValues(alpha: 0.0),
+                    const Color(0xFF6366F1).withValues(alpha: 0.28),
+                    const Color(0xFF6366F1).withValues(alpha: 0.0),
                   ],
                 ),
               ),
             ),
           ),
 
-          // ── Subtle violet glow orb bottom-left
-          Positioned(
-            bottom: -60,
-            left: -40,
+          // ── Center Ambient Orb directly behind card to power glass refraction
+          Center(
             child: Container(
-              width: 200,
-              height: 200,
+              width: 280,
+              height: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.primary.withValues(alpha: 0.15),
-                    AppColors.primary.withValues(alpha: 0.0),
+                    AppColors.primaryLight.withValues(alpha: 0.15),
+                    Colors.transparent,
                   ],
                 ),
               ),
             ),
           ),
 
-          // ── Content
+          // ── Foreground Content
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Brand section — above the card
-                      Icon(
-                        Icons.monitor_heart_outlined,
-                        size: 56,
-                        color: AppColors.primaryLight,
+                      // Brand Header
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          border: Border.all(
+                            color: AppColors.primaryLight.withValues(alpha: 0.3),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.monitor_heart_outlined,
+                          size: 40,
+                          color: AppColors.primaryLight,
+                        ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       Text(
                         'Site Pulse',
                         style: theme.textTheme.headlineMedium?.copyWith(
@@ -174,166 +203,268 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Text(
                         'Field Operations & Offline Sync',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: Colors.white.withValues(alpha: 0.55),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 28),
 
-                      // ── Form card
-                      Container(
-                        padding: const EdgeInsets.all(28),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.border,
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.3),
-                              blurRadius: 32,
-                              offset: const Offset(0, 12),
-                            ),
-                          ],
-                        ),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'Welcome back',
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                  letterSpacing: -0.3,
-                                ),
+                      // ── Glassmorphic Form Card
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                          child: Container(
+                            padding: const EdgeInsets.all(26),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.12),
+                                  Colors.white.withValues(alpha: 0.04),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Enter your credentials to continue',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.20),
+                                width: 1.2,
                               ),
-                              const SizedBox(height: 24),
-
-                              // Inline Error Message
-                              if (_errorMessage != null) ...[
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.critical.withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: AppColors.critical.withValues(alpha: 0.4),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.error_outline,
-                                        color: AppColors.critical,
-                                        size: 18,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          _errorMessage!,
-                                          style: theme.textTheme.bodySmall?.copyWith(
-                                            color: AppColors.critical,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.35),
+                                  blurRadius: 30,
+                                  offset: const Offset(0, 16),
                                 ),
-                                const SizedBox(height: 16),
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.18),
+                                  blurRadius: 24,
+                                  spreadRadius: -4,
+                                  offset: const Offset(0, 8),
+                                ),
                               ],
-
-                              // Email Field
-                              TextFormField(
-                                key: const Key('email_field'),
-                                controller: _emailController,
-                                keyboardType: TextInputType.emailAddress,
-                                autocorrect: false,
-                                enabled: !_isLoading,
-                                decoration: const InputDecoration(
-                                  labelText: 'Email',
-                                  hintText: 'user@sitepulse.test',
-                                  prefixIcon: Icon(Icons.email_outlined),
-                                ),
-                                validator: _validateEmail,
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Password Field
-                              TextFormField(
-                                key: const Key('password_field'),
-                                controller: _passwordController,
-                                obscureText: _obscurePassword,
-                                enabled: !_isLoading,
-                                decoration: InputDecoration(
-                                  labelText: 'Password',
-                                  prefixIcon: const Icon(Icons.lock_outline),
-                                  suffixIcon: IconButton(
-                                    key: const Key('password_visibility_button'),
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_off_outlined
-                                          : Icons.visibility_outlined,
+                            ),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    'Welcome back',
+                                    style: theme.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                      letterSpacing: -0.3,
                                     ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
-                                    tooltip: _obscurePassword
-                                        ? 'Show password'
-                                        : 'Hide password',
                                   ),
-                                ),
-                                validator: _validatePassword,
-                              ),
-                              const SizedBox(height: 24),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Enter your credentials to continue',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: Colors.white.withValues(alpha: 0.65),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 22),
 
-                              // Sign In Button
-                              SizedBox(
-                                height: 52,
-                                child: FilledButton(
-                                  key: const Key('sign_in_button'),
-                                  onPressed: _isLoading ? null : _handleSignIn,
-                                  child: _isLoading
-                                      ? const SizedBox(
-                                          width: 22,
-                                          height: 22,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.5,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Text(
-                                          'Sign in',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                  // Inline Error Message
+                                  if (_errorMessage != null) ...[
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.critical.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: AppColors.critical.withValues(alpha: 0.5),
                                         ),
-                                ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.error_outline,
+                                            color: AppColors.critical,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              _errorMessage!,
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+
+                                  // Email Field with Frosted Styling
+                                  TextFormField(
+                                    key: const Key('email_field'),
+                                    controller: _emailController,
+                                    keyboardType: TextInputType.emailAddress,
+                                    autocorrect: false,
+                                    enabled: !_isLoading,
+                                    style: const TextStyle(color: Colors.white, fontSize: 15),
+                                    decoration: InputDecoration(
+                                      filled: true,
+                                      fillColor: Colors.white.withValues(alpha: 0.07),
+                                      labelText: 'Email',
+                                      labelStyle: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.75),
+                                      ),
+                                      hintText: 'user@sitepulse.test',
+                                      hintStyle: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.35),
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.email_outlined,
+                                        color: Colors.white.withValues(alpha: 0.75),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: BorderSide(
+                                          color: Colors.white.withValues(alpha: 0.16),
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: const BorderSide(
+                                          color: AppColors.primaryLight,
+                                          width: 1.8,
+                                        ),
+                                      ),
+                                      errorBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: const BorderSide(
+                                          color: AppColors.critical,
+                                        ),
+                                      ),
+                                      focusedErrorBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: const BorderSide(
+                                          color: AppColors.critical,
+                                          width: 1.8,
+                                        ),
+                                      ),
+                                    ),
+                                    validator: _validateEmail,
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  // Password Field with Frosted Styling
+                                  TextFormField(
+                                    key: const Key('password_field'),
+                                    controller: _passwordController,
+                                    obscureText: _obscurePassword,
+                                    enabled: !_isLoading,
+                                    style: const TextStyle(color: Colors.white, fontSize: 15),
+                                    decoration: InputDecoration(
+                                      filled: true,
+                                      fillColor: Colors.white.withValues(alpha: 0.07),
+                                      labelText: 'Password',
+                                      labelStyle: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.75),
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.lock_outline,
+                                        color: Colors.white.withValues(alpha: 0.75),
+                                      ),
+                                      suffixIcon: IconButton(
+                                        key: const Key('password_visibility_button'),
+                                        icon: Icon(
+                                          _obscurePassword
+                                              ? Icons.visibility_off_outlined
+                                              : Icons.visibility_outlined,
+                                          color: Colors.white.withValues(alpha: 0.75),
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _obscurePassword = !_obscurePassword;
+                                          });
+                                        },
+                                        tooltip: _obscurePassword
+                                            ? 'Show password'
+                                            : 'Hide password',
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: BorderSide(
+                                          color: Colors.white.withValues(alpha: 0.16),
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: const BorderSide(
+                                          color: AppColors.primaryLight,
+                                          width: 1.8,
+                                        ),
+                                      ),
+                                      errorBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: const BorderSide(
+                                          color: AppColors.critical,
+                                        ),
+                                      ),
+                                      focusedErrorBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: const BorderSide(
+                                          color: AppColors.critical,
+                                          width: 1.8,
+                                        ),
+                                      ),
+                                    ),
+                                    validator: _validatePassword,
+                                  ),
+                                  const SizedBox(height: 24),
+
+                                  // Sign In Button
+                                  SizedBox(
+                                    height: 52,
+                                    child: FilledButton(
+                                      key: const Key('sign_in_button'),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        elevation: 4,
+                                        shadowColor: AppColors.primary.withValues(alpha: 0.5),
+                                      ),
+                                      onPressed: _isLoading ? null : _handleSignIn,
+                                      child: _isLoading
+                                          ? const SizedBox(
+                                              width: 22,
+                                              height: 22,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2.5,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                          : const Text(
+                                              'Sign in',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       Text(
                         'Site Pulse © 2025',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.25),
+                          color: Colors.white.withValues(alpha: 0.3),
                         ),
                       ),
                     ],

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
+import 'package:site_pulse/core/theme/app_theme.dart';
+import 'package:site_pulse/core/widgets/app_page_background.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/quantity_stepper.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
@@ -105,7 +107,8 @@ class _MaterialUsageScreenState extends ConsumerState<MaterialUsageScreen> {
           child: OfflineBanner(),
         ),
       ),
-      body: materialsAsync.when(
+      body: AppPageBackground(
+        child: materialsAsync.when(
         loading: () => const LoadingView(message: 'Loading materials…'),
         error: (e, _) => ErrorView(
           message: 'Failed to load materials: $e',
@@ -293,6 +296,7 @@ class _MaterialUsageScreenState extends ConsumerState<MaterialUsageScreen> {
           );
         },
       ),
+      ),
     );
   }
 }
@@ -426,10 +430,11 @@ class _StockRow extends StatelessWidget {
     return Row(
       children: [
         Text(label,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: Theme.of(context).colorScheme.outline)),
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            )),
         const Spacer(),
         Text(value,
             style: TextStyle(fontWeight: FontWeight.bold, color: color)),
@@ -488,10 +493,11 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: Theme.of(context)
-          .textTheme
-          .labelLarge
-          ?.copyWith(color: Theme.of(context).colorScheme.outline),
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textSecondary,
+      ),
     );
   }
 }

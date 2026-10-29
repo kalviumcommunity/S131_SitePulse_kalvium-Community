@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
+import 'package:site_pulse/core/widgets/app_page_background.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
 import 'package:site_pulse/core/widgets/sync_chip.dart';
@@ -220,7 +221,8 @@ class SupervisorHomeScreen extends ConsumerWidget {
           child: OfflineBanner(),
         ),
       ),
-      body: RefreshIndicator(
+      body: AppPageBackground(
+        child: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(_supervisorSiteProvider(siteId));
           ref.invalidate(_siteAttendanceProvider(siteId));
@@ -275,17 +277,17 @@ class SupervisorHomeScreen extends ConsumerWidget {
                                   const SizedBox(height: 2),
                                   Text(
                                     'Name: ${user?.name ?? 'Unknown'}',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 12,
-                                      color: Theme.of(context).colorScheme.outline,
+                                      color: AppColors.textSecondary,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                   Text(
                                     'Role: ${user?.role.name ?? 'Unknown'}',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 12,
-                                      color: Theme.of(context).colorScheme.outline,
+                                      color: AppColors.textSecondary,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -419,7 +421,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
                       'Latest 10 items',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Theme.of(context).colorScheme.outline,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -473,6 +475,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -533,9 +536,10 @@ class _ActionCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
-                        color: Theme.of(context).colorScheme.outline,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -626,7 +630,7 @@ class _ActivityTile extends StatelessWidget {
                         formatTime(item.timestamp),
                         style: TextStyle(
                           fontSize: 11,
-                          color: Theme.of(context).colorScheme.outline,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(width: 6),

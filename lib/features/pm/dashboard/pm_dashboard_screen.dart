@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
+import 'package:site_pulse/core/widgets/app_page_background.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
 import 'package:site_pulse/data/models/attendance_entry.dart';
@@ -143,7 +144,8 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
           child: OfflineBanner(),
         ),
       ),
-      body: sitesAsync.when(
+      body: AppPageBackground(
+        child: sitesAsync.when(
         loading: () => const LoadingView(message: 'Loading sites…'),
         error: (e, _) => ErrorView(
           message: 'Failed to load sites: $e',
@@ -228,16 +230,18 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                                 const SizedBox(height: 2),
                                 Text(
                                   'Name: ${user?.name ?? 'Unknown'}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 12,
-                                    color: Theme.of(context).colorScheme.outline,
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 Text(
                                   'Role: ${user?.role.name ?? 'pm'}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 12,
-                                    color: Theme.of(context).colorScheme.outline,
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
@@ -395,7 +399,7 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                         'Tap site to inspect',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Theme.of(context).colorScheme.outline,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -442,6 +446,7 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
             ),
           );
         },
+      ),
       ),
     );
   }
@@ -504,9 +509,10 @@ class _MetricCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey.shade600,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
+import 'package:site_pulse/core/widgets/app_page_background.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/severity_selector.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
@@ -170,7 +171,8 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
           child: OfflineBanner(),
         ),
       ),
-      body: SingleChildScrollView(
+      body: AppPageBackground(
+        child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -216,9 +218,11 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                     const SizedBox(height: 12),
                     Text(
                       'Severity Level',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.outline,
-                          ),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     SeveritySelector(
@@ -228,9 +232,11 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'Description',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.outline,
-                          ),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -372,6 +378,7 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
             const SizedBox(height: 32),
           ],
         ),
+      ),
       ),
     );
   }

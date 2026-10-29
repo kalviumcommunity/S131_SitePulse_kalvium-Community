@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
+import 'package:site_pulse/core/widgets/app_page_background.dart';
 import 'package:site_pulse/core/widgets/widgets.dart';
 import 'package:site_pulse/data/models/worker.dart';
 import 'package:site_pulse/data/providers.dart';
@@ -169,7 +170,9 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         icon: const Icon(Icons.person_add),
         label: const Text('Add Worker'),
       ),
-      body: _buildBody(context, siteId),
+      body: AppPageBackground(
+        child: _buildBody(context, siteId),
+      ),
     );
   }
 

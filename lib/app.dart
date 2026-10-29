@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/theme/app_theme.dart';
+import 'core/widgets/sync_failure_banner.dart';
 import 'data/providers.dart';
 import 'router.dart';
 
@@ -40,6 +41,8 @@ class _SitePulseAppState extends ConsumerState<SitePulseApp> {
       title: 'Site Pulse',
       theme: buildTheme(),
       routerConfig: _router,
+      builder: (context, child) =>
+          SyncFailureBanner(child: child ?? const SizedBox.shrink()),
     );
   }
 }

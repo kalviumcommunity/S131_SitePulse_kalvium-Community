@@ -1,9 +1,16 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:site_pulse/data/models/write_failure.dart';
 import 'package:site_pulse/data/providers.dart';
 import 'package:site_pulse/data/repositories/fakes/fake_sync_status_repository.dart';
 import 'package:site_pulse/data/repositories/repositories.dart';
+
+class _MockFirebaseFirestore extends Mock implements FirebaseFirestore {}
+
+class _MockFirebaseAuth extends Mock implements FirebaseAuth {}
 
 void main() {
   group('WriteFailureSink', () {
@@ -71,6 +78,59 @@ void main() {
       expect(await repository.writeFailures.first, isEmpty);
     });
   });
+
+  test(
+    'fake sync status receives failures from its subscribed sink stream',
+    () async {
+      final sink = WriteFailureSink();
+      final repository = FakeSyncStatusRepository(failureSink: sink);
+      addTearDown(repository.dispose);
+      addTearDown(sink.clear);
+
+      final failureFuture = repository.writeFailures.firstWhere(
+        (failures) => failures.isNotEmpty,
+      );
+      sink.report(
+        'workers',
+        const RepositoryError(
+          operation: 'saveWorker',
+          message: 'permission denied',
+          documentId: 'worker-id',
+        ),
+      );
+
+      final failures = await failureFuture;
+      expect(failures.single.message, 'permission denied');
+    },
+  );
+
+  test(
+    'Firestore sync status receives failures from its subscribed sink stream',
+    () async {
+      final sink = WriteFailureSink();
+      final repository = FirestoreSyncStatusRepository(
+        firestore: _MockFirebaseFirestore(),
+        auth: _MockFirebaseAuth(),
+        failureSink: sink,
+      );
+      addTearDown(sink.clear);
+
+      final failureFuture = repository.writeFailures.firstWhere(
+        (failures) => failures.isNotEmpty,
+      );
+      sink.report(
+        'workers',
+        const RepositoryError(
+          operation: 'saveWorker',
+          message: 'permission denied',
+          documentId: 'worker-id',
+        ),
+      );
+
+      final failures = await failureFuture;
+      expect(failures.single.message, 'permission denied');
+    },
+  );
 
   test('provider forwards repository failures into sync status', () async {
     writeFailureSink.clear();

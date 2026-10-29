@@ -69,9 +69,6 @@ class FirestoreIncidentRepository implements IncidentRepository {
     Severity? severity,
   }) {
     Query<Map<String, dynamic>> query = _incidentsCol(siteId);
-    if (severity != null) {
-      query = query.where('severity', isEqualTo: severity.name);
-    }
     if (startDate != null) {
       query = query.where(
         'occurredAt',
@@ -89,19 +86,26 @@ class FirestoreIncidentRepository implements IncidentRepository {
     return query
         .snapshots(includeMetadataChanges: true)
         .map(
-          (snapshot) => snapshot.docs.map((doc) {
-            final data = doc.data();
-            return Incident(
-              id: doc.id,
-              severity: Severity.fromString(data['severity'] as String? ?? ''),
-              description: data['description'] as String? ?? '',
-              occurredAt:
-                  (data['occurredAt'] as Timestamp?)?.toDate() ??
-                  DateTime.fromMillisecondsSinceEpoch(0),
-              siteId: siteId,
-              hasPendingWrites: doc.metadata.hasPendingWrites,
-            );
-          }).toList(),
+          (snapshot) => snapshot.docs
+              .map((doc) {
+                final data = doc.data();
+                return Incident(
+                  id: doc.id,
+                  severity: Severity.fromString(
+                    data['severity'] as String? ?? '',
+                  ),
+                  description: data['description'] as String? ?? '',
+                  occurredAt:
+                      (data['occurredAt'] as Timestamp?)?.toDate() ??
+                      DateTime.fromMillisecondsSinceEpoch(0),
+                  siteId: siteId,
+                  hasPendingWrites: doc.metadata.hasPendingWrites,
+                );
+              })
+              .where(
+                (incident) => severity == null || incident.severity == severity,
+              )
+              .toList(),
         );
   }
 

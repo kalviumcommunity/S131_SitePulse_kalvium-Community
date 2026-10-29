@@ -58,56 +58,10 @@ class FirestoreSiteRepository implements SiteRepository {
     });
   }
 
-  // ── Writes (fire-and-forget) ───────────────────────────────────────────
-
-  @override
-  String createOrUpdateSite(Site site) {
-    final id = site.id;
-    if (id.isEmpty) {
-      _errorController.add(
-        const RepositoryError(
-          operation: 'createOrUpdateSite',
-          message: 'Site id cannot be empty',
-        ),
-      );
-      return '';
-    }
-
-    final batch = _db.batch();
-    batch.set(_sitesCol.doc(id), site.toFirestore(), SetOptions(merge: true));
-    batch.commit().then(
-      (_) {},
-      onError: (Object e, StackTrace st) => _reportWriteFailure(
-        'createOrUpdateSite',
-        id,
-        e,
-        st,
-      ),
-    );
-    return id;
-  }
-
   // ── Error stream ───────────────────────────────────────────────────────
 
   @override
   Stream<RepositoryError> get errorStream => _errorController.stream;
-
-  void _reportWriteFailure(
-    String operation,
-    String docId,
-    Object error,
-    StackTrace stackTrace,
-  ) {
-    _errorController.add(
-      RepositoryError(
-        operation: operation,
-        message: error.toString(),
-        error: error,
-        stackTrace: stackTrace,
-        documentId: docId,
-      ),
-    );
-  }
 
   void dispose() {
     _errorController.close();

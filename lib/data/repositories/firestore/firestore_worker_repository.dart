@@ -90,6 +90,9 @@ class FirestoreWorkerRepository implements WorkerRepository {
       worker.toFirestore(),
       SetOptions(merge: true),
     );
+    batch.set(_db.collection('sites').doc(siteId), {
+      'lastEntryAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
     batch.commit().then(
       (_) {},
       onError: (Object e, StackTrace st) =>
@@ -102,6 +105,9 @@ class FirestoreWorkerRepository implements WorkerRepository {
   String toggleWorkerActive(String siteId, String workerId, bool active) {
     final batch = _db.batch();
     batch.update(_workersCol(siteId).doc(workerId), {'active': active});
+    batch.set(_db.collection('sites').doc(siteId), {
+      'lastEntryAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
     batch.commit().then(
       (_) {},
       onError: (Object e, StackTrace st) =>

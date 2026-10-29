@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:site_pulse/data/models/material.dart';
 import 'package:site_pulse/data/models/material_log.dart';
 import 'package:site_pulse/data/repositories/material_repository.dart';
@@ -6,40 +7,44 @@ import 'package:site_pulse/data/repositories/repository_error.dart';
 
 class FakeMaterialRepository implements MaterialRepository {
   static List<Material> get defaultMaterials => [
-        // One below threshold: currentStock 15 <= lowStockThreshold 25
-        const Material(
-          id: 'mat-1',
-          name: 'Portland Cement (50kg)',
-          unit: 'bags',
-          openingStock: 100.0,
-          currentStock: 15.0,
-          lowStockThreshold: 25.0,
-        ),
-        const Material(
-          id: 'mat-2',
-          name: 'Coarse River Sand',
-          unit: 'tonnes',
-          openingStock: 60.0,
-          currentStock: 45.0,
-          lowStockThreshold: 10.0,
-        ),
-        const Material(
-          id: 'mat-3',
-          name: 'TMT Steel Rebar (12mm)',
-          unit: 'tonnes',
-          openingStock: 40.0,
-          currentStock: 28.0,
-          lowStockThreshold: 12.0,
-        ),
-        const Material(
-          id: 'mat-4',
-          name: 'Structural Concrete M25',
-          unit: 'm3',
-          openingStock: 80.0,
-          currentStock: 50.0,
-          lowStockThreshold: 20.0,
-        ),
-      ];
+    // One below threshold: currentStock 15 <= lowStockThreshold 25
+    const Material(
+      id: 'mat-1',
+      name: 'Portland Cement (50kg)',
+      unit: 'bags',
+      openingStock: 100.0,
+      currentStock: 15.0,
+      lowStockThreshold: 25.0,
+      siteId: 'site-1',
+    ),
+    const Material(
+      id: 'mat-2',
+      name: 'Coarse River Sand',
+      unit: 'tonnes',
+      openingStock: 60.0,
+      currentStock: 45.0,
+      lowStockThreshold: 10.0,
+      siteId: 'site-1',
+    ),
+    const Material(
+      id: 'mat-3',
+      name: 'TMT Steel Rebar (12mm)',
+      unit: 'tonnes',
+      openingStock: 40.0,
+      currentStock: 28.0,
+      lowStockThreshold: 12.0,
+      siteId: 'site-1',
+    ),
+    const Material(
+      id: 'mat-4',
+      name: 'Structural Concrete M25',
+      unit: 'm3',
+      openingStock: 80.0,
+      currentStock: 50.0,
+      lowStockThreshold: 20.0,
+      siteId: 'site-1',
+    ),
+  ];
 
   final Map<String, Material> _materials = {};
   final List<MaterialLog> _logs = [];
@@ -56,43 +61,61 @@ class FakeMaterialRepository implements MaterialRepository {
   }) {
     final list = initialMaterials ?? defaultMaterials;
     for (final m in list) {
-      _materials[m.id] = m;
+      _materials[_materialKey(m.siteId, m.id)] = m;
     }
     if (initialLogs != null) {
       _logs.addAll(initialLogs);
     }
   }
 
+  String _materialKey(String? siteId, String materialId) =>
+      '${siteId ?? ''}\u0000$materialId';
+
   @override
-  Stream<List<Material>> watchMaterials() async* {
-    yield _materials.values.toList();
-    yield* _materialChangeController.stream.map((_) => _materials.values.toList());
+  Stream<List<Material>> watchMaterials({String? siteId}) async* {
+    List<Material> current() => _materials.values
+        .where((material) => siteId == null || material.siteId == siteId)
+        .toList();
+
+    yield current();
+    yield* _materialChangeController.stream.map((_) => current());
   }
 
   @override
-  Stream<Material?> watchMaterial(String id) async* {
-    yield _materials[id];
-    yield* _materialChangeController.stream.map((_) => _materials[id]);
+  Stream<Material?> watchMaterial(String id, {String? siteId}) async* {
+    Material? current() {
+      final matches = _materials.values.where(
+        (material) =>
+            material.id == id && (siteId == null || material.siteId == siteId),
+      );
+      return matches.length == 1 ? matches.first : null;
+    }
+
+    yield current();
+    yield* _materialChangeController.stream.map((_) => current());
   }
 
   @override
   Stream<List<MaterialLog>> watchMaterialLogs({
+    String? siteId,
     String? materialId,
     DateTime? startDate,
     DateTime? endDate,
   }) async* {
-    yield _filterLogs(materialId, startDate, endDate);
+    yield _filterLogs(siteId, materialId, startDate, endDate);
     yield* _logChangeController.stream.map(
-      (_) => _filterLogs(materialId, startDate, endDate),
+      (_) => _filterLogs(siteId, materialId, startDate, endDate),
     );
   }
 
   List<MaterialLog> _filterLogs(
+    String? siteId,
     String? materialId,
     DateTime? startDate,
     DateTime? endDate,
   ) {
     return _logs.where((log) {
+      if (siteId != null && log.siteId != siteId) return false;
       if (materialId != null && log.materialId != materialId) return false;
       if (startDate != null && log.date.isBefore(startDate)) return false;
       if (endDate != null && log.date.isAfter(endDate)) return false;
@@ -111,7 +134,7 @@ class FakeMaterialRepository implements MaterialRepository {
       );
       return '';
     }
-    _materials[material.id] = material;
+    _materials[_materialKey(material.siteId, material.id)] = material;
     _materialChangeController.add(null);
     return material.id;
   }
@@ -120,16 +143,27 @@ class FakeMaterialRepository implements MaterialRepository {
   String logUsage({
     required String materialId,
     required double qtyUsed,
+    String? siteId,
     DateTime? date,
     String? logId,
   }) {
-    final effectiveLogId = logId ?? 'log-${DateTime.now().microsecondsSinceEpoch}';
-    final existing = _materials[materialId];
+    final effectiveLogId =
+        logId ?? 'log-${DateTime.now().microsecondsSinceEpoch}';
+    final candidates = _materials.values
+        .where(
+          (material) =>
+              material.id == materialId &&
+              (siteId == null || material.siteId == siteId),
+        )
+        .toList();
+    final existing = candidates.length == 1 ? candidates.single : null;
     if (existing == null) {
       _errorController.add(
         RepositoryError(
           operation: 'logUsage',
-          message: 'Material with id $materialId does not exist',
+          message: candidates.length > 1
+              ? 'Material with id $materialId is ambiguous across sites'
+              : 'Material with id $materialId does not exist for site $siteId',
           documentId: effectiveLogId,
         ),
       );
@@ -154,9 +188,12 @@ class FakeMaterialRepository implements MaterialRepository {
       qtyUsed: qtyUsed,
       remainingAfter: newRemaining,
       date: date ?? DateTime.now(),
+      siteId: existing.siteId,
     );
 
-    _materials[materialId] = existing.copyWith(currentStock: newRemaining);
+    _materials[_materialKey(existing.siteId, materialId)] = existing.copyWith(
+      currentStock: newRemaining,
+    );
     _logs.add(log);
 
     _materialChangeController.add(null);

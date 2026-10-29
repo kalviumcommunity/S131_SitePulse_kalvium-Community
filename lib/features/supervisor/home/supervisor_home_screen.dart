@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
+import 'package:site_pulse/core/utils/date_ranges.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
 import 'package:site_pulse/core/widgets/sync_chip.dart';
@@ -17,11 +18,7 @@ import 'package:site_pulse/features/auth/auth_controller.dart';
 // Activity Feed Data Types & Providers
 // ---------------------------------------------------------------------------
 
-enum ActivityType {
-  attendance,
-  material,
-  incident,
-}
+enum ActivityType { attendance, material, incident }
 
 class ActivityItem {
   final String id;
@@ -41,133 +38,158 @@ class ActivityItem {
   });
 }
 
-final _supervisorSiteProvider =
-    StreamProvider.autoDispose.family<Site?, String>((ref, siteId) {
-  if (siteId.isEmpty) return Stream.value(null);
-  return ref.watch(siteRepositoryProvider).watchSite(siteId);
-});
+final _supervisorSiteProvider = StreamProvider.autoDispose
+    .family<Site?, String>((ref, siteId) {
+      if (siteId.isEmpty) return Stream.value(null);
+      return ref.watch(siteRepositoryProvider).watchSite(siteId);
+    });
 
 final _siteAttendanceProvider = StreamProvider.autoDispose
     .family<List<AttendanceEntry>, String>((ref, siteId) {
-  if (siteId.isEmpty) return Stream.value([]);
-  return ref.watch(attendanceRepositoryProvider).watchAttendance(siteId: siteId);
-});
+      if (siteId.isEmpty) return Stream.value([]);
+      final range = lastSevenDays();
+      return ref
+          .watch(attendanceRepositoryProvider)
+          .watchAttendance(
+            siteId: siteId,
+            startDate: range.start,
+            endDate: range.end,
+          );
+    });
 
-final _materialLogsProvider =
-    StreamProvider.autoDispose<List<MaterialLog>>((ref) {
-  return ref.watch(materialRepositoryProvider).watchMaterialLogs();
-});
+final _materialLogsProvider = StreamProvider.autoDispose
+    .family<List<MaterialLog>, String>((ref, siteId) {
+      return ref
+          .watch(materialRepositoryProvider)
+          .watchMaterialLogs(siteId: siteId);
+    });
 
-final _materialsProvider =
-    StreamProvider.autoDispose<List<sp.Material>>((ref) {
-  return ref.watch(materialRepositoryProvider).watchMaterials();
-});
+final _materialsProvider = StreamProvider.autoDispose
+    .family<List<sp.Material>, String>((ref, siteId) {
+      return ref
+          .watch(materialRepositoryProvider)
+          .watchMaterials(siteId: siteId);
+    });
 
-final _siteIncidentsProvider =
-    StreamProvider.autoDispose.family<List<Incident>, String>((ref, siteId) {
-  return ref
-      .watch(incidentRepositoryProvider)
-      .watchIncidents(siteId: siteId.isNotEmpty ? siteId : null);
-});
+final _siteIncidentsProvider = StreamProvider.autoDispose
+    .family<List<Incident>, String>((ref, siteId) {
+      return ref
+          .watch(incidentRepositoryProvider)
+          .watchIncidents(siteId: siteId);
+    });
 
 final supervisorActivityProvider = Provider.autoDispose
     .family<AsyncValue<List<ActivityItem>>, String>((ref, siteId) {
-  final attendanceAsync = ref.watch(_siteAttendanceProvider(siteId));
-  final materialLogsAsync = ref.watch(_materialLogsProvider);
-  final materialsAsync = ref.watch(_materialsProvider);
-  final incidentsAsync = ref.watch(_siteIncidentsProvider(siteId));
+      final attendanceAsync = ref.watch(_siteAttendanceProvider(siteId));
+      final materialLogsAsync = ref.watch(_materialLogsProvider(siteId));
+      final materialsAsync = ref.watch(_materialsProvider(siteId));
+      final incidentsAsync = ref.watch(_siteIncidentsProvider(siteId));
 
-  if (attendanceAsync.isLoading && !attendanceAsync.hasValue) {
-    return const AsyncValue.loading();
-  }
-  if (materialLogsAsync.isLoading && !materialLogsAsync.hasValue) {
-    return const AsyncValue.loading();
-  }
-  if (incidentsAsync.isLoading && !incidentsAsync.hasValue) {
-    return const AsyncValue.loading();
-  }
+      if (attendanceAsync.isLoading && !attendanceAsync.hasValue) {
+        return const AsyncValue.loading();
+      }
+      if (materialLogsAsync.isLoading && !materialLogsAsync.hasValue) {
+        return const AsyncValue.loading();
+      }
+      if (incidentsAsync.isLoading && !incidentsAsync.hasValue) {
+        return const AsyncValue.loading();
+      }
 
-  if (attendanceAsync.hasError && !attendanceAsync.hasValue) {
-    return AsyncValue.error(attendanceAsync.error!, attendanceAsync.stackTrace!);
-  }
-  if (materialLogsAsync.hasError && !materialLogsAsync.hasValue) {
-    return AsyncValue.error(materialLogsAsync.error!, materialLogsAsync.stackTrace!);
-  }
-  if (incidentsAsync.hasError && !incidentsAsync.hasValue) {
-    return AsyncValue.error(incidentsAsync.error!, incidentsAsync.stackTrace!);
-  }
+      if (attendanceAsync.hasError && !attendanceAsync.hasValue) {
+        return AsyncValue.error(
+          attendanceAsync.error!,
+          attendanceAsync.stackTrace!,
+        );
+      }
+      if (materialLogsAsync.hasError && !materialLogsAsync.hasValue) {
+        return AsyncValue.error(
+          materialLogsAsync.error!,
+          materialLogsAsync.stackTrace!,
+        );
+      }
+      if (incidentsAsync.hasError && !incidentsAsync.hasValue) {
+        return AsyncValue.error(
+          incidentsAsync.error!,
+          incidentsAsync.stackTrace!,
+        );
+      }
 
-  final attendance = attendanceAsync.value ?? [];
-  final logs = materialLogsAsync.value ?? [];
-  final materials = materialsAsync.value ?? [];
-  final incidents = incidentsAsync.value ?? [];
+      final attendance = attendanceAsync.value ?? [];
+      final logs = materialLogsAsync.value ?? [];
+      final materials = materialsAsync.value ?? [];
+      final incidents = incidentsAsync.value ?? [];
 
-  final materialMap = {for (final m in materials) m.id: m};
-  final List<ActivityItem> items = [];
+      final materialMap = {
+        for (final m in materials) '${m.siteId ?? siteId}::${m.id}': m,
+      };
+      final List<ActivityItem> items = [];
 
-  // Group attendance records by day
-  final attendanceByDate = <String, List<AttendanceEntry>>{};
-  for (final a in attendance) {
-    final dStr = '${a.date.year}-${a.date.month}-${a.date.day}';
-    attendanceByDate.putIfAbsent(dStr, () => []).add(a);
-  }
-  for (final entry in attendanceByDate.entries) {
-    final list = entry.value;
-    final date = list.first.date;
-    final presentCount =
-        list.where((a) => a.status == AttendanceStatus.present).length;
-    final halfCount =
-        list.where((a) => a.status == AttendanceStatus.half).length;
-    final hasPending = list.any((a) => a.hasPendingWrites);
+      // Group attendance records by day
+      final attendanceByDate = <String, List<AttendanceEntry>>{};
+      for (final a in attendance) {
+        final dStr = '${a.date.year}-${a.date.month}-${a.date.day}';
+        attendanceByDate.putIfAbsent(dStr, () => []).add(a);
+      }
+      for (final entry in attendanceByDate.entries) {
+        final list = entry.value;
+        final date = list.first.date;
+        final presentCount = list
+            .where((a) => a.status == AttendanceStatus.present)
+            .length;
+        final halfCount = list
+            .where((a) => a.status == AttendanceStatus.half)
+            .length;
+        final hasPending = list.any((a) => a.hasPendingWrites);
 
-    items.add(
-      ActivityItem(
-        id: 'att_${entry.key}',
-        type: ActivityType.attendance,
-        title: 'Attendance Recorded',
-        description:
-            '$presentCount present, $halfCount half-day (${list.length} total)',
-        timestamp: date,
-        hasPendingWrites: hasPending,
-      ),
-    );
-  }
+        items.add(
+          ActivityItem(
+            id: 'att_${entry.key}',
+            type: ActivityType.attendance,
+            title: 'Attendance Recorded',
+            description:
+                '$presentCount present, $halfCount half-day (${list.length} total)',
+            timestamp: date,
+            hasPendingWrites: hasPending,
+          ),
+        );
+      }
 
-  // Material logs
-  for (final log in logs) {
-    final matName = materialMap[log.materialId]?.name ?? 'Material';
-    final unit = materialMap[log.materialId]?.unit ?? 'units';
-    items.add(
-      ActivityItem(
-        id: 'mat_${log.id}',
-        type: ActivityType.material,
-        title: 'Material Logged: $matName',
-        description:
-            'Used ${log.qtyUsed.toStringAsFixed(1)} $unit (${log.remainingAfter.toStringAsFixed(1)} $unit remaining)',
-        timestamp: log.date,
-        hasPendingWrites: log.hasPendingWrites,
-      ),
-    );
-  }
+      // Material logs
+      for (final log in logs) {
+        final materialKey = '${log.siteId ?? siteId}::${log.materialId}';
+        final matName = materialMap[materialKey]?.name ?? 'Material';
+        final unit = materialMap[materialKey]?.unit ?? 'units';
+        items.add(
+          ActivityItem(
+            id: 'mat_${log.id}',
+            type: ActivityType.material,
+            title: 'Material Logged: $matName',
+            description:
+                'Used ${log.qtyUsed.toStringAsFixed(1)} $unit (${log.remainingAfter.toStringAsFixed(1)} $unit remaining)',
+            timestamp: log.date,
+            hasPendingWrites: log.hasPendingWrites,
+          ),
+        );
+      }
 
-  // Incidents
-  for (final inc in incidents) {
-    items.add(
-      ActivityItem(
-        id: 'inc_${inc.id}',
-        type: ActivityType.incident,
-        title: 'Incident: ${inc.severity.name.toUpperCase()}',
-        description: inc.description,
-        timestamp: inc.occurredAt,
-        hasPendingWrites: inc.hasPendingWrites,
-      ),
-    );
-  }
+      // Incidents
+      for (final inc in incidents) {
+        items.add(
+          ActivityItem(
+            id: 'inc_${inc.id}',
+            type: ActivityType.incident,
+            title: 'Incident: ${inc.severity.name.toUpperCase()}',
+            description: inc.description,
+            timestamp: inc.occurredAt,
+            hasPendingWrites: inc.hasPendingWrites,
+          ),
+        );
+      }
 
-  // Sort descending by timestamp and limit to 10
-  items.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-  return AsyncValue.data(items.take(10).toList());
-});
+      // Sort descending by timestamp and limit to 10
+      items.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      return AsyncValue.data(items.take(10).toList());
+    });
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -189,8 +211,18 @@ class SupervisorHomeScreen extends ConsumerWidget {
     }
 
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${d.day} ${months[d.month - 1]}  ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
@@ -199,7 +231,30 @@ class SupervisorHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authRepo = ref.watch(authRepositoryProvider);
     final user = authRepo.currentUser;
-    final siteId = user?.siteId ?? '';
+    final siteId = user?.siteId;
+
+    if (siteId == null || siteId.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Supervisor Home'),
+          actions: [
+            IconButton(
+              key: const Key('logout_button'),
+              icon: const Icon(Icons.logout),
+              tooltip: 'Logout',
+              onPressed: () => ref.read(authControllerProvider).signOut(),
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: OfflineBanner(),
+          ),
+        ),
+        body: const EmptyView(
+          message: 'No project site is assigned to this account.',
+        ),
+      );
+    }
 
     final siteAsync = ref.watch(_supervisorSiteProvider(siteId));
     final activityAsync = ref.watch(supervisorActivityProvider(siteId));
@@ -224,8 +279,8 @@ class SupervisorHomeScreen extends ConsumerWidget {
         onRefresh: () async {
           ref.invalidate(_supervisorSiteProvider(siteId));
           ref.invalidate(_siteAttendanceProvider(siteId));
-          ref.invalidate(_materialLogsProvider);
-          ref.invalidate(_materialsProvider);
+          ref.invalidate(_materialLogsProvider(siteId));
+          ref.invalidate(_materialsProvider(siteId));
           ref.invalidate(_siteIncidentsProvider(siteId));
         },
         child: SingleChildScrollView(
@@ -250,8 +305,9 @@ class SupervisorHomeScreen extends ConsumerWidget {
                           children: [
                             CircleAvatar(
                               radius: 24,
-                              backgroundColor:
-                                  AppColors.primary.withValues(alpha: 0.12),
+                              backgroundColor: AppColors.primary.withValues(
+                                alpha: 0.12,
+                              ),
                               child: const Icon(
                                 Icons.person,
                                 color: AppColors.primary,
@@ -268,16 +324,16 @@ class SupervisorHomeScreen extends ConsumerWidget {
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                        ?.copyWith(fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     'Name: ${user?.name ?? 'Unknown'}',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Theme.of(context).colorScheme.outline,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outline,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -285,7 +341,9 @@ class SupervisorHomeScreen extends ConsumerWidget {
                                     'Role: ${user?.role.name ?? 'Unknown'}',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Theme.of(context).colorScheme.outline,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outline,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -318,10 +376,16 @@ class SupervisorHomeScreen extends ConsumerWidget {
                                 ),
                                 error: (_, _) => Text(
                                   'Site: $siteId',
-                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                                 data: (site) => Text(
-                                  site != null ? site.name : (siteId.isNotEmpty ? 'Site: $siteId' : 'No Site Assigned'),
+                                  site != null
+                                      ? site.name
+                                      : (siteId.isNotEmpty
+                                            ? 'Site: $siteId'
+                                            : 'No Site Assigned'),
                                   key: const Key('site_name_header'),
                                   style: const TextStyle(
                                     fontSize: 16,
@@ -343,9 +407,8 @@ class SupervisorHomeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
                   'Daily Actions',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(height: 12),
@@ -410,9 +473,8 @@ class SupervisorHomeScreen extends ConsumerWidget {
                   children: [
                     Text(
                       'Recent Activity Feed',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const Spacer(),
                     Text(
@@ -438,7 +500,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
                     message: 'Failed to load activity: $e',
                     onRetry: () {
                       ref.invalidate(_siteAttendanceProvider(siteId));
-                      ref.invalidate(_materialLogsProvider);
+                      ref.invalidate(_materialLogsProvider(siteId));
                       ref.invalidate(_siteIncidentsProvider(siteId));
                     },
                   ),
@@ -448,7 +510,8 @@ class SupervisorHomeScreen extends ConsumerWidget {
                     return const Padding(
                       padding: EdgeInsets.all(24.0),
                       child: EmptyView(
-                        message: 'No recent activity recorded for this site yet.',
+                        message:
+                            'No recent activity recorded for this site yet.',
                       ),
                     );
                   }
@@ -461,10 +524,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final item = activities[index];
-                      return _ActivityTile(
-                        item: item,
-                        formatTime: _formatTime,
-                      );
+                      return _ActivityTile(item: item, formatTime: _formatTime);
                     },
                   );
                 },
@@ -558,10 +618,7 @@ class _ActivityTile extends StatelessWidget {
   final ActivityItem item;
   final String Function(DateTime) formatTime;
 
-  const _ActivityTile({
-    required this.item,
-    required this.formatTime,
-  });
+  const _ActivityTile({required this.item, required this.formatTime});
 
   IconData _iconForType(ActivityType type) {
     switch (type) {
@@ -636,10 +693,7 @@ class _ActivityTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     item.description,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade800,
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
                   ),
                 ],
               ),

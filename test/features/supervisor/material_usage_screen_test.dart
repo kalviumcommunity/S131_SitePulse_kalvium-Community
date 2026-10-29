@@ -1,17 +1,69 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
 import 'package:site_pulse/data/models/material.dart' as sp;
+import 'package:site_pulse/data/models/material_log.dart';
 import 'package:site_pulse/data/providers.dart';
 import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/supervisor/material/material_usage_screen.dart';
 
-Widget buildScreen() {
+class _TrackingMaterialRepository extends FakeMaterialRepository {
+  _TrackingMaterialRepository({super.initialMaterials});
+
+  final List<String?> materialSiteIds = [];
+  final List<String?> logSiteIds = [];
+  final List<String?> usageSiteIds = [];
+
+  @override
+  Stream<List<sp.Material>> watchMaterials({String? siteId}) {
+    materialSiteIds.add(siteId);
+    return super.watchMaterials(siteId: siteId);
+  }
+
+  @override
+  Stream<List<MaterialLog>> watchMaterialLogs({
+    String? siteId,
+    String? materialId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    logSiteIds.add(siteId);
+    return super.watchMaterialLogs(
+      siteId: siteId,
+      materialId: materialId,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+
+  @override
+  String logUsage({
+    required String materialId,
+    required double qtyUsed,
+    String? siteId,
+    DateTime? date,
+    String? logId,
+  }) {
+    usageSiteIds.add(siteId);
+    return super.logUsage(
+      materialId: materialId,
+      qtyUsed: qtyUsed,
+      siteId: siteId,
+      date: date,
+      logId: logId,
+    );
+  }
+}
+
+Widget buildScreen({FakeMaterialRepository? repository}) {
   return ProviderScope(
     overrides: [
-      materialRepositoryProvider
-          .overrideWithValue(FakeMaterialRepository()),
+      materialRepositoryProvider.overrideWithValue(
+        repository ?? FakeMaterialRepository(),
+      ),
     ],
     child: const MaterialApp(home: MaterialUsageScreen()),
   );
@@ -19,6 +71,48 @@ Widget buildScreen() {
 
 void main() {
   group('MaterialUsageScreen Widget Tests', () {
+    testWidgets('supervisor material queries and usage are site-scoped', (
+      tester,
+    ) async {
+      final repository = _TrackingMaterialRepository(
+        initialMaterials: const [
+          sp.Material(
+            id: 'mat_shared',
+            name: 'Site 1 Cement',
+            unit: 'bags',
+            openingStock: 100,
+            currentStock: 80,
+            lowStockThreshold: 20,
+            siteId: 'site-1',
+          ),
+          sp.Material(
+            id: 'mat_shared',
+            name: 'Site 2 Cement',
+            unit: 'bags',
+            openingStock: 100,
+            currentStock: 15,
+            lowStockThreshold: 20,
+            siteId: 'site-2',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(buildScreen(repository: repository));
+      await tester.pumpAndSettle();
+
+      expect(repository.materialSiteIds, isNotEmpty);
+      expect(repository.materialSiteIds, everyElement('site-1'));
+      expect(repository.logSiteIds, isNotEmpty);
+      expect(repository.logSiteIds, everyElement('site-1'));
+      expect(find.text('Site 1 Cement'), findsOneWidget);
+      expect(find.text('Site 2 Cement'), findsNothing);
+
+      await tester.tap(find.byKey(const Key('log_usage_button')));
+      await tester.pump();
+
+      expect(repository.usageSiteIds, ['site-1']);
+    });
+
     testWidgets('renders material dropdown', (tester) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();

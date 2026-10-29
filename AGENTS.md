@@ -16,6 +16,7 @@ sites/{siteId}/workers | attendance (id: siteId_workerId_yyyymmdd) | materials |
 ## Hard rules
 - Never await Firestore writes in the UI (offline they never complete). Show "Saved on this device", attach catchError.
 - Never use transactions. Use WriteBatch + FieldValue.increment.
+- Never use a hardcoded or fallback site, worker or user id in lib/features or in the real repositories; ids come only from the signed-in user.
 - Every document gets a client UUID or a deterministic ID, generated once when the form opens.
 - Show sync state with snapshots(includeMetadataChanges: true) and metadata.hasPendingWrites.
 - Cancel every stream subscription on dispose. Dashboard queries always filter by date and have a limit.

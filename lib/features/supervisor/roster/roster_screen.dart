@@ -1,10 +1,12 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/core/widgets/widgets.dart';
 import 'package:site_pulse/data/models/worker.dart';
 import 'package:site_pulse/data/providers.dart';
+import 'package:uuid/uuid.dart';
 
 const List<String> kAvailableTrades = [
   'Mason',
@@ -47,34 +49,44 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
 
   void _setupWorkerStream() {
     final authRepo = ref.read(authRepositoryProvider);
-    final siteId = authRepo.currentUser?.siteId ?? 'site-1';
-    final workerRepo = ref.read(workerRepositoryProvider);
-
     _subscription?.cancel();
+    final siteId = authRepo.currentUser?.siteId;
+    if (siteId == null || siteId.isEmpty) {
+      setState(() {
+        _workers = [];
+        _isLoading = false;
+        _error = null;
+      });
+      return;
+    }
+
+    final workerRepo = ref.read(workerRepositoryProvider);
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
-    _subscription = workerRepo.watchWorkers(siteId, activeOnly: true).listen(
-      (workers) {
-        if (mounted) {
-          setState(() {
-            _workers = workers;
-            _isLoading = false;
-            _error = null;
-          });
-        }
-      },
-      onError: (err) {
-        if (mounted) {
-          setState(() {
-            _error = err;
-            _isLoading = false;
-          });
-        }
-      },
-    );
+    _subscription = workerRepo
+        .watchWorkers(siteId, activeOnly: true)
+        .listen(
+          (workers) {
+            if (mounted) {
+              setState(() {
+                _workers = workers;
+                _isLoading = false;
+                _error = null;
+              });
+            }
+          },
+          onError: (err) {
+            if (mounted) {
+              setState(() {
+                _error = err;
+                _isLoading = false;
+              });
+            }
+          },
+        );
   }
 
   @override
@@ -89,18 +101,20 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     String siteId,
     List<Worker> activeWorkers,
   ) {
+    final workerId = const Uuid().v4();
     showDialog<void>(
       context: context,
       builder: (dialogCtx) => _AddWorkerDialog(
+        workerId: workerId,
         siteId: siteId,
         existingActiveWorkers: activeWorkers,
         onSave: (worker) {
           // Never await write!
           final workerRepo = ref.read(workerRepositoryProvider);
           workerRepo.saveWorker(siteId, worker);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Saved on this device')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Saved on this device')));
         },
       ),
     );
@@ -126,9 +140,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           ),
           FilledButton(
             key: const Key('confirm_remove_button'),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.critical,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.critical),
             onPressed: () {
               Navigator.of(dialogCtx).pop();
               // Never await write!
@@ -149,7 +161,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
   Widget build(BuildContext context) {
     final authRepo = ref.watch(authRepositoryProvider);
     final user = authRepo.currentUser;
-    final siteId = user?.siteId ?? 'site-1';
+    final siteId = user?.siteId;
 
     return Scaffold(
       appBar: AppBar(
@@ -161,11 +173,9 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('add_worker_fab'),
-        onPressed: () => _showAddWorkerDialog(
-          context,
-          siteId,
-          _workers ?? [],
-        ),
+        onPressed: siteId == null || siteId.isEmpty
+            ? null
+            : () => _showAddWorkerDialog(context, siteId, _workers ?? []),
         icon: const Icon(Icons.person_add),
         label: const Text('Add Worker'),
       ),
@@ -173,7 +183,13 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     );
   }
 
-  Widget _buildBody(BuildContext context, String siteId) {
+  Widget _buildBody(BuildContext context, String? siteId) {
+    if (siteId == null || siteId.isEmpty) {
+      return const EmptyView(
+        message: 'No project site is assigned to this account.',
+      );
+    }
+
     if (_isLoading) {
       return const LoadingView(message: 'Loading active workers...');
     }
@@ -207,7 +223,8 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         // Header with count & Search Box
         Container(
           padding: const EdgeInsets.all(16.0),
-          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest
+              .withValues(alpha: 0.3),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -216,12 +233,14 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                 children: [
                   Text(
                     'Active Workers',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(12),
@@ -274,19 +293,27 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                   ),
                 )
               : ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   itemCount: filteredWorkers.length,
                   separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final worker = filteredWorkers[index];
                     return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 4,
+                        horizontal: 8,
+                      ),
                       title: Row(
                         children: [
                           Expanded(
                             child: Text(
                               worker.name,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           SyncChip(pending: worker.hasPendingWrites),
@@ -297,21 +324,31 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                         child: Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 worker.workerCode,
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               worker.trade,
                               style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                                 fontSize: 13,
                               ),
                             ),
@@ -320,9 +357,13 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
                       ),
                       trailing: IconButton(
                         key: Key('remove_worker_${worker.id}'),
-                        icon: const Icon(Icons.person_remove_outlined, color: AppColors.critical),
+                        icon: const Icon(
+                          Icons.person_remove_outlined,
+                          color: AppColors.critical,
+                        ),
                         tooltip: 'Remove Worker',
-                        onPressed: () => _confirmRemoveWorker(context, siteId, worker),
+                        onPressed: () =>
+                            _confirmRemoveWorker(context, siteId, worker),
                       ),
                     );
                   },
@@ -334,11 +375,13 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
 }
 
 class _AddWorkerDialog extends StatefulWidget {
+  final String workerId;
   final String siteId;
   final List<Worker> existingActiveWorkers;
   final ValueChanged<Worker> onSave;
 
   const _AddWorkerDialog({
+    required this.workerId,
     required this.siteId,
     required this.existingActiveWorkers,
     required this.onSave,
@@ -388,7 +431,7 @@ class _AddWorkerDialogState extends State<_AddWorkerDialog> {
     }
 
     final newWorker = Worker(
-      id: 'w_${DateTime.now().microsecondsSinceEpoch}',
+      id: widget.workerId,
       name: _nameController.text.trim(),
       workerCode: _workerCodeController.text.trim().toUpperCase(),
       trade: _selectedTrade,
@@ -437,14 +480,9 @@ class _AddWorkerDialogState extends State<_AddWorkerDialog> {
               DropdownButtonFormField<String>(
                 key: const Key('add_worker_trade_dropdown'),
                 initialValue: _selectedTrade,
-                decoration: const InputDecoration(
-                  labelText: 'Trade *',
-                ),
+                decoration: const InputDecoration(labelText: 'Trade *'),
                 items: kAvailableTrades.map((trade) {
-                  return DropdownMenuItem(
-                    value: trade,
-                    child: Text(trade),
-                  );
+                  return DropdownMenuItem(value: trade, child: Text(trade));
                 }).toList(),
                 onChanged: (val) {
                   if (val != null) {

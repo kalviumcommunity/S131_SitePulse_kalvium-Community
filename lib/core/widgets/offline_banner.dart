@@ -5,14 +5,19 @@ import 'package:site_pulse/core/theme/app_theme.dart';
 /// Top banner that listens to network connectivity.
 /// When offline: shows "Offline - entries are saved on this device".
 /// When online: hidden (SizedBox.shrink).
-class OfflineBanner extends StatelessWidget {
-  const OfflineBanner({
-    super.key,
-    this.overrideOffline,
-  });
+class OfflineBanner extends StatefulWidget {
+  const OfflineBanner({super.key, this.overrideOffline});
 
   /// Optional override for testing offline state without platform channels.
   final bool? overrideOffline;
+
+  @override
+  State<OfflineBanner> createState() => _OfflineBannerState();
+}
+
+class _OfflineBannerState extends State<OfflineBanner> {
+  late final Stream<List<ConnectivityResult>> _connectivityChanges =
+      Connectivity().onConnectivityChanged;
 
   bool _isOffline(List<ConnectivityResult> results) {
     if (results.isEmpty) return true;
@@ -21,12 +26,12 @@ class OfflineBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (overrideOffline != null) {
-      return overrideOffline! ? _buildBanner() : const SizedBox.shrink();
+    if (widget.overrideOffline != null) {
+      return widget.overrideOffline! ? _buildBanner() : const SizedBox.shrink();
     }
 
     return StreamBuilder<List<ConnectivityResult>>(
-      stream: Connectivity().onConnectivityChanged,
+      stream: _connectivityChanges,
       builder: (context, snapshot) {
         final results = snapshot.data;
         final isOffline = results != null && _isOffline(results);

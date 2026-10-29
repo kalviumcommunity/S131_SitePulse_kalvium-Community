@@ -18,6 +18,7 @@ class MaterialLog {
   final double qtyUsed;
   final double remainingAfter;
   final DateTime date;
+  final String? siteId;
   final bool hasPendingWrites;
 
   const MaterialLog({
@@ -26,6 +27,7 @@ class MaterialLog {
     required this.qtyUsed,
     required this.remainingAfter,
     required this.date,
+    this.siteId,
     this.hasPendingWrites = false,
   });
 
@@ -35,6 +37,7 @@ class MaterialLog {
     double? qtyUsed,
     double? remainingAfter,
     DateTime? date,
+    String? siteId,
     bool? hasPendingWrites,
   }) {
     return MaterialLog(
@@ -43,6 +46,7 @@ class MaterialLog {
       qtyUsed: qtyUsed ?? this.qtyUsed,
       remainingAfter: remainingAfter ?? this.remainingAfter,
       date: date ?? this.date,
+      siteId: siteId ?? this.siteId,
       hasPendingWrites: hasPendingWrites ?? this.hasPendingWrites,
     );
   }
@@ -54,6 +58,7 @@ class MaterialLog {
       'qtyUsed': qtyUsed,
       'remainingAfter': remainingAfter,
       'date': date.toIso8601String(),
+      if (siteId != null) 'siteId': siteId,
       'hasPendingWrites': hasPendingWrites,
     };
   }
@@ -68,8 +73,8 @@ class MaterialLog {
       qtyUsed: (map['qtyUsed'] as num?)?.toDouble() ?? 0.0,
       remainingAfter: (map['remainingAfter'] as num?)?.toDouble() ?? 0.0,
       date: _parseDateTime(map['date']) ?? DateTime.now(),
-      hasPendingWrites:
-          (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
+      siteId: map['siteId'] as String?,
+      hasPendingWrites: (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
     );
   }
 
@@ -83,19 +88,21 @@ class MaterialLog {
           qtyUsed == other.qtyUsed &&
           remainingAfter == other.remainingAfter &&
           date.toIso8601String() == other.date.toIso8601String() &&
+          siteId == other.siteId &&
           hasPendingWrites == other.hasPendingWrites;
 
   @override
   int get hashCode => Object.hash(
-        id,
-        materialId,
-        qtyUsed,
-        remainingAfter,
-        date.toIso8601String(),
-        hasPendingWrites,
-      );
+    id,
+    materialId,
+    qtyUsed,
+    remainingAfter,
+    date.toIso8601String(),
+    siteId,
+    hasPendingWrites,
+  );
 
   @override
   String toString() =>
-      'MaterialLog(id: $id, materialId: $materialId, qtyUsed: $qtyUsed, remainingAfter: $remainingAfter, date: $date, hasPendingWrites: $hasPendingWrites)';
+      'MaterialLog(id: $id, materialId: $materialId, qtyUsed: $qtyUsed, remainingAfter: $remainingAfter, date: $date, siteId: $siteId, hasPendingWrites: $hasPendingWrites)';
 }

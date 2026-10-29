@@ -16,18 +16,18 @@ import 'package:site_pulse/data/repositories/attendance_repository.dart';
 // ---------------------------------------------------------------------------
 
 /// Workers stream for the supervisor's site.
-final _attendanceWorkersProvider =
-    StreamProvider.autoDispose.family<List<Worker>, String>((ref, siteId) {
-  final repo = ref.watch(workerRepositoryProvider);
-  return repo.watchWorkers(siteId);
-});
+final _attendanceWorkersProvider = StreamProvider.autoDispose
+    .family<List<Worker>, String>((ref, siteId) {
+      final repo = ref.watch(workerRepositoryProvider);
+      return repo.watchWorkers(siteId);
+    });
 
 /// Existing attendance stream for a given site + date.
 final _existingAttendanceProvider = StreamProvider.autoDispose
     .family<List<AttendanceEntry>, _AttendanceKey>((ref, key) {
-  final repo = ref.watch(attendanceRepositoryProvider);
-  return repo.watchAttendance(siteId: key.siteId, date: key.date);
-});
+      final repo = ref.watch(attendanceRepositoryProvider);
+      return repo.watchAttendance(siteId: key.siteId, date: key.date);
+    });
 
 class _AttendanceKey {
   final String siteId;
@@ -115,8 +115,18 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
   String _formatDate(DateTime d) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final today = _today();
     final isToday =
@@ -193,10 +203,24 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   Widget build(BuildContext context) {
     final authRepo = ref.watch(authRepositoryProvider);
     final user = authRepo.currentUser;
-    final siteId = user?.siteId ?? '';
+    final siteId = user?.siteId;
 
-    final workersAsync =
-        ref.watch(_attendanceWorkersProvider(siteId));
+    if (siteId == null || siteId.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Attendance'),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: OfflineBanner(),
+          ),
+        ),
+        body: const EmptyView(
+          message: 'No project site is assigned to this account.',
+        ),
+      );
+    }
+
+    final workersAsync = ref.watch(_attendanceWorkersProvider(siteId));
     final existingAsync = ref.watch(
       _existingAttendanceProvider(_AttendanceKey(siteId, _selectedDate)),
     );
@@ -227,11 +251,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               message: 'Failed to load attendance: $e',
               onRetry: () => ref.invalidate(
                 _existingAttendanceProvider(
-                    _AttendanceKey(siteId, _selectedDate)),
+                  _AttendanceKey(siteId, _selectedDate),
+                ),
               ),
             ),
-            data: (existing) =>
-                _buildBody(context, siteId, workers, existing),
+            data: (existing) => _buildBody(context, siteId, workers, existing),
           );
         },
       ),
@@ -273,8 +297,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             color: colorScheme.surfaceContainerHighest,
             child: Row(
               children: [
-                Icon(Icons.calendar_today,
-                    size: 18, color: colorScheme.primary),
+                Icon(
+                  Icons.calendar_today,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   _formatDate(_selectedDate),
@@ -317,8 +344,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               const Spacer(),
               Text(
                 '${workers.length} workers',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: colorScheme.outline),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.outline,
+                ),
               ),
             ],
           ),
@@ -403,12 +431,9 @@ class _WorkerAttendanceTile extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor:
-                    theme.colorScheme.primaryContainer,
+                backgroundColor: theme.colorScheme.primaryContainer,
                 child: Text(
-                  worker.name.isNotEmpty
-                      ? worker.name[0].toUpperCase()
-                      : '?',
+                  worker.name.isNotEmpty ? worker.name[0].toUpperCase() : '?',
                   style: TextStyle(
                     color: theme.colorScheme.onPrimaryContainer,
                     fontWeight: FontWeight.bold,
@@ -422,8 +447,9 @@ class _WorkerAttendanceTile extends StatelessWidget {
                   children: [
                     Text(
                       worker.name,
-                      style: theme.textTheme.bodyLarge
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     Text(
                       '${worker.workerCode}  •  ${worker.trade}',
@@ -489,10 +515,7 @@ class _CounterChip extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(color: color, fontSize: 12),
-          ),
+          Text(label, style: TextStyle(color: color, fontSize: 12)),
         ],
       ),
     );

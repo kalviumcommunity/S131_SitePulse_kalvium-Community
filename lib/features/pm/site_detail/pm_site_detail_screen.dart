@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
+import 'package:site_pulse/core/utils/date_ranges.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
 import 'package:site_pulse/core/widgets/sync_chip.dart';
@@ -17,46 +18,57 @@ import 'package:site_pulse/data/providers.dart';
 // Providers
 // ---------------------------------------------------------------------------
 
-final _siteDetailProvider =
-    StreamProvider.autoDispose.family<Site?, String>((ref, siteId) {
+final _siteDetailProvider = StreamProvider.autoDispose.family<Site?, String>((
+  ref,
+  siteId,
+) {
   return ref.watch(siteRepositoryProvider).watchSite(siteId);
 });
 
-final _siteDetailWorkersProvider =
-    StreamProvider.autoDispose.family<List<Worker>, String>((ref, siteId) {
-  return ref.watch(workerRepositoryProvider).watchWorkers(siteId);
-});
+final _siteDetailWorkersProvider = StreamProvider.autoDispose
+    .family<List<Worker>, String>((ref, siteId) {
+      return ref.watch(workerRepositoryProvider).watchWorkers(siteId);
+    });
 
 final _siteDetailAttendanceProvider = StreamProvider.autoDispose
     .family<List<AttendanceEntry>, _SiteDetailQuery>((ref, query) {
-  return ref.watch(attendanceRepositoryProvider).watchAttendance(
-        siteId: query.siteId,
-        startDate: query.range.start,
-        endDate: query.range.end,
-      );
-});
+      return ref
+          .watch(attendanceRepositoryProvider)
+          .watchAttendance(
+            siteId: query.siteId,
+            startDate: query.range.start,
+            endDate: query.range.end,
+          );
+    });
 
-final _siteDetailMaterialsProvider =
-    StreamProvider.autoDispose<List<sp.Material>>((ref) {
-  return ref.watch(materialRepositoryProvider).watchMaterials();
-});
+final _siteDetailMaterialsProvider = StreamProvider.autoDispose
+    .family<List<sp.Material>, String>((ref, siteId) {
+      return ref
+          .watch(materialRepositoryProvider)
+          .watchMaterials(siteId: siteId);
+    });
 
 final _siteDetailMaterialLogsProvider = StreamProvider.autoDispose
     .family<List<MaterialLog>, _SiteDetailQuery>((ref, query) {
-  return ref.watch(materialRepositoryProvider).watchMaterialLogs(
-        startDate: query.range.start,
-        endDate: query.range.end,
-      );
-});
+      return ref
+          .watch(materialRepositoryProvider)
+          .watchMaterialLogs(
+            siteId: query.siteId,
+            startDate: query.range.start,
+            endDate: query.range.end,
+          );
+    });
 
 final _siteDetailIncidentsProvider = StreamProvider.autoDispose
     .family<List<Incident>, _SiteDetailQuery>((ref, query) {
-  return ref.watch(incidentRepositoryProvider).watchIncidents(
-        siteId: query.siteId,
-        startDate: query.range.start,
-        endDate: query.range.end,
-      );
-});
+      return ref
+          .watch(incidentRepositoryProvider)
+          .watchIncidents(
+            siteId: query.siteId,
+            startDate: query.range.start,
+            endDate: query.range.end,
+          );
+    });
 
 class _SiteDetailQuery {
   final String siteId;
@@ -96,12 +108,7 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    final now = DateTime.now();
-    _dateRange = DateTimeRange(
-      start: DateTime(now.year, now.month, now.day)
-          .subtract(const Duration(days: 29)),
-      end: DateTime(now.year, now.month, now.day, 23, 59, 59),
-    );
+    _dateRange = lastSevenDays();
   }
 
   @override
@@ -112,8 +119,18 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
 
   String _formatRangeLabel(DateTimeRange r) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${r.start.day} ${months[r.start.month - 1]} – ${r.end.day} ${months[r.end.month - 1]}';
   }
@@ -128,8 +145,19 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
     if (picked != null) {
       setState(() {
         _dateRange = DateTimeRange(
-          start: DateTime(picked.start.year, picked.start.month, picked.start.day),
-          end: DateTime(picked.end.year, picked.end.month, picked.end.day, 23, 59, 59),
+          start: DateTime(
+            picked.start.year,
+            picked.start.month,
+            picked.start.day,
+          ),
+          end: DateTime(
+            picked.end.year,
+            picked.end.month,
+            picked.end.day,
+            23,
+            59,
+            59,
+          ),
         );
       });
     }
@@ -195,16 +223,10 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
           ),
 
           // ── Tab 2: Materials Stock & Logs ────────────────────────
-          _MaterialsTab(
-            key: const Key('tab_materials_view'),
-            query: query,
-          ),
+          _MaterialsTab(key: const Key('tab_materials_view'), query: query),
 
           // ── Tab 3: Incidents History ─────────────────────────────
-          _IncidentsTab(
-            key: const Key('tab_incidents_view'),
-            query: query,
-          ),
+          _IncidentsTab(key: const Key('tab_incidents_view'), query: query),
         ],
       ),
     );
@@ -219,16 +241,22 @@ class _AttendanceTab extends ConsumerWidget {
   final String siteId;
   final _SiteDetailQuery query;
 
-  const _AttendanceTab({
-    super.key,
-    required this.siteId,
-    required this.query,
-  });
+  const _AttendanceTab({super.key, required this.siteId, required this.query});
 
   String _formatDate(DateTime d) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${d.day} ${months[d.month - 1]} ${d.year}';
   }
@@ -261,8 +289,7 @@ class _AttendanceTab extends ConsumerWidget {
           byDay.putIfAbsent(key, () => []).add(r);
         }
 
-        final sortedDays = byDay.keys.toList()
-          ..sort((a, b) => b.compareTo(a));
+        final sortedDays = byDay.keys.toList()..sort((a, b) => b.compareTo(a));
 
         return ListView.builder(
           padding: const EdgeInsets.all(16),
@@ -272,12 +299,15 @@ class _AttendanceTab extends ConsumerWidget {
             final dayRecords = byDay[dayKey]!;
             final date = dayRecords.first.date;
 
-            final present =
-                dayRecords.where((r) => r.status == AttendanceStatus.present).length;
-            final half =
-                dayRecords.where((r) => r.status == AttendanceStatus.half).length;
-            final absent =
-                dayRecords.where((r) => r.status == AttendanceStatus.absent).length;
+            final present = dayRecords
+                .where((r) => r.status == AttendanceStatus.present)
+                .length;
+            final half = dayRecords
+                .where((r) => r.status == AttendanceStatus.half)
+                .length;
+            final absent = dayRecords
+                .where((r) => r.status == AttendanceStatus.absent)
+                .length;
 
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
@@ -311,13 +341,19 @@ class _AttendanceTab extends ConsumerWidget {
 
                   return ListTile(
                     dense: true,
-                    title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    title: Text(
+                      name,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     subtitle: Text(trade),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: statusColor.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(6),
@@ -353,29 +389,39 @@ class _AttendanceTab extends ConsumerWidget {
 class _MaterialsTab extends ConsumerWidget {
   final _SiteDetailQuery query;
 
-  const _MaterialsTab({
-    super.key,
-    required this.query,
-  });
+  const _MaterialsTab({super.key, required this.query});
 
   String _formatDate(DateTime d) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${d.day} ${months[d.month - 1]}  ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final materialsAsync = ref.watch(_siteDetailMaterialsProvider);
+    final materialsAsync = ref.watch(
+      _siteDetailMaterialsProvider(query.siteId),
+    );
     final logsAsync = ref.watch(_siteDetailMaterialLogsProvider(query));
 
     return materialsAsync.when(
       loading: () => const LoadingView(message: 'Loading materials…'),
       error: (e, _) => ErrorView(
         message: 'Failed to load materials: $e',
-        onRetry: () => ref.invalidate(_siteDetailMaterialsProvider),
+        onRetry: () =>
+            ref.invalidate(_siteDetailMaterialsProvider(query.siteId)),
       ),
       data: (materials) {
         if (materials.isEmpty) {
@@ -383,8 +429,6 @@ class _MaterialsTab extends ConsumerWidget {
         }
 
         final materialMap = {for (final m in materials) m.id: m};
-        final logs = logsAsync.value ?? [];
-
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -392,9 +436,8 @@ class _MaterialsTab extends ConsumerWidget {
             children: [
               Text(
                 'Current Stock Status',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
 
@@ -413,7 +456,9 @@ class _MaterialsTab extends ConsumerWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(
-                        color: isLow ? Colors.orange.shade300 : Colors.grey.shade200,
+                        color: isLow
+                            ? Colors.orange.shade300
+                            : Colors.grey.shade200,
                       ),
                     ),
                     child: Padding(
@@ -422,7 +467,9 @@ class _MaterialsTab extends ConsumerWidget {
                         children: [
                           Icon(
                             Icons.inventory_2,
-                            color: isLow ? Colors.orange.shade800 : AppColors.primary,
+                            color: isLow
+                                ? Colors.orange.shade800
+                                : AppColors.primary,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -441,7 +488,9 @@ class _MaterialsTab extends ConsumerWidget {
                                   'Current: ${m.currentStock.toStringAsFixed(1)} ${m.unit}  •  Threshold: ${m.lowStockThreshold.toStringAsFixed(0)} ${m.unit}',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: isLow ? Colors.orange.shade900 : Colors.grey.shade700,
+                                    color: isLow
+                                        ? Colors.orange.shade900
+                                        : Colors.grey.shade700,
                                   ),
                                 ),
                               ],
@@ -449,7 +498,10 @@ class _MaterialsTab extends ConsumerWidget {
                           ),
                           if (isLow)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.orange.shade100,
                                 borderRadius: BorderRadius.circular(6),
@@ -465,7 +517,10 @@ class _MaterialsTab extends ConsumerWidget {
                             )
                           else
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.green.shade50,
                                 borderRadius: BorderRadius.circular(6),
@@ -492,48 +547,63 @@ class _MaterialsTab extends ConsumerWidget {
 
               Text(
                 'Recent Material Usage Logs',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
 
-              if (logs.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                  child: Text('No material usage logged in this date range.'),
-                )
-              else
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: logs.length > 20 ? 20 : logs.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final log = logs[index];
-                    final mat = materialMap[log.materialId];
-                    final unit = mat?.unit ?? 'units';
-                    final name = mat?.name ?? log.materialId;
-
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Colors.orange.shade50,
-                        child: Icon(Icons.remove, color: Colors.orange.shade900, size: 18),
-                      ),
-                      title: Text(
-                        '−${log.qtyUsed.toStringAsFixed(1)} $unit  ($name)',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(
-                        'Remaining: ${log.remainingAfter.toStringAsFixed(1)} $unit  •  ${_formatDate(log.date)}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      trailing: SyncChip(pending: log.hasPendingWrites),
-                    );
-                  },
+              logsAsync.when(
+                loading: () =>
+                    const LoadingView(message: 'Loading material logs…'),
+                error: (error, _) => ErrorView(
+                  message: 'Failed to load material logs: $error',
+                  onRetry: () =>
+                      ref.invalidate(_siteDetailMaterialLogsProvider(query)),
                 ),
+                data: (logs) => logs.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        child: Text(
+                          'No material usage logged in this date range.',
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: logs.length > 20 ? 20 : logs.length,
+                        separatorBuilder: (_, _) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final log = logs[index];
+                          final mat = materialMap[log.materialId];
+                          final unit = mat?.unit ?? 'units';
+                          final name = mat?.name ?? log.materialId;
+
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: Colors.orange.shade50,
+                              child: Icon(
+                                Icons.remove,
+                                color: Colors.orange.shade900,
+                                size: 18,
+                              ),
+                            ),
+                            title: Text(
+                              '−${log.qtyUsed.toStringAsFixed(1)} $unit  ($name)',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text(
+                              'Remaining: ${log.remainingAfter.toStringAsFixed(1)} $unit  •  ${_formatDate(log.date)}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            trailing: SyncChip(pending: log.hasPendingWrites),
+                          );
+                        },
+                      ),
+              ),
             ],
           ),
         );
@@ -549,15 +619,22 @@ class _MaterialsTab extends ConsumerWidget {
 class _IncidentsTab extends ConsumerWidget {
   final _SiteDetailQuery query;
 
-  const _IncidentsTab({
-    super.key,
-    required this.query,
-  });
+  const _IncidentsTab({super.key, required this.query});
 
   String _formatDate(DateTime d) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${d.day} ${months[d.month - 1]}  ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
@@ -634,7 +711,10 @@ class _IncidentsTab extends ConsumerWidget {
                         Icon(icon, color: color, size: 20),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: color.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(6),
@@ -651,7 +731,10 @@ class _IncidentsTab extends ConsumerWidget {
                         if (isEscalated) ...[
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.red.shade100,
                               borderRadius: BorderRadius.circular(6),
@@ -679,10 +762,7 @@ class _IncidentsTab extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Text(
-                      inc.description,
-                      style: const TextStyle(fontSize: 14),
-                    ),
+                    Text(inc.description, style: const TextStyle(fontSize: 14)),
                   ],
                 ),
               ),

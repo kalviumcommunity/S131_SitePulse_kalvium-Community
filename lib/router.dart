@@ -1,9 +1,10 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:site_pulse/data/models/app_user.dart';
 import 'package:site_pulse/data/repositories/auth_repository.dart';
-import 'package:site_pulse/data/repositories/fakes/fake_auth_repository.dart';
+
 import 'features/auth/login_screen.dart';
 import 'features/pm/site_detail/pm_site_detail_screen.dart';
 import 'features/pm/dashboard/pm_dashboard_screen.dart';
@@ -13,21 +14,13 @@ import 'features/supervisor/attendance/attendance_screen.dart';
 import 'features/supervisor/material/material_usage_screen.dart';
 import 'features/supervisor/incident/incident_screen.dart';
 
-/// Global repository instance shared between router and auth features
-AuthRepository _globalAuthRepository = FakeAuthRepository(
-  initialUser: null, // Default to signed-out state on boot
-);
-
-AuthRepository get currentAuthRepository => _globalAuthRepository;
-set currentAuthRepository(AuthRepository repo) => _globalAuthRepository = repo;
-
 /// Converts a Stream into a Listenable for GoRouter refreshListenable
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
     _subscription = stream.asBroadcastStream().listen(
-          (dynamic _) => notifyListeners(),
-        );
+      (dynamic _) => notifyListeners(),
+    );
   }
 
   late final StreamSubscription<dynamic> _subscription;
@@ -41,10 +34,10 @@ class GoRouterRefreshStream extends ChangeNotifier {
 
 GoRouter buildRouter({
   required bool firebaseReady,
-  AuthRepository? authRepository,
+  required AuthRepository authRepository,
   String? initialLocation,
 }) {
-  final authRepo = authRepository ?? currentAuthRepository;
+  final authRepo = authRepository;
 
   return GoRouter(
     initialLocation: initialLocation ?? '/login',
@@ -79,10 +72,7 @@ GoRouter buildRouter({
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/supervisor/home',
         builder: (context, state) => const SupervisorHomeScreen(),

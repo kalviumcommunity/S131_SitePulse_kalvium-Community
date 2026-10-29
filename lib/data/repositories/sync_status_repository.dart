@@ -58,19 +58,18 @@ class FirestoreSyncStatusRepository implements SyncStatusRepository {
           return _combinePendingCounts([
             site
                 .collection('attendance')
-                .where('createdBy', isEqualTo: user.uid)
                 .where('dateKey', isGreaterThanOrEqualTo: startKey)
                 .where('dateKey', isLessThanOrEqualTo: endKey)
+                .limit(500)
                 .snapshots(includeMetadataChanges: true),
             site
                 .collection('materialLogs')
-                .where('createdBy', isEqualTo: user.uid)
                 .where('dateKey', isGreaterThanOrEqualTo: startKey)
                 .where('dateKey', isLessThanOrEqualTo: endKey)
+                .limit(500)
                 .snapshots(includeMetadataChanges: true),
             site
                 .collection('incidents')
-                .where('createdBy', isEqualTo: user.uid)
                 .where(
                   'occurredAt',
                   isGreaterThanOrEqualTo: Timestamp.fromDate(firstDay),
@@ -81,8 +80,9 @@ class FirestoreSyncStatusRepository implements SyncStatusRepository {
                     today.add(const Duration(days: 1)),
                   ),
                 )
+                .limit(500)
                 .snapshots(includeMetadataChanges: true),
-          ]);
+          ], user.uid);
         });
   });
 
@@ -128,6 +128,7 @@ class FirestoreSyncStatusRepository implements SyncStatusRepository {
 
   Stream<int> _combinePendingCounts(
     List<Stream<QuerySnapshot<Map<String, dynamic>>>> streams,
+    String userId,
   ) {
     late final StreamController<int> controller;
     final subscriptions =
@@ -140,7 +141,11 @@ class FirestoreSyncStatusRepository implements SyncStatusRepository {
           subscriptions.add(
             streams[index].listen((snapshot) {
               counts[index] = snapshot.docs
-                  .where((document) => document.metadata.hasPendingWrites)
+                  .where(
+                    (document) =>
+                        document.metadata.hasPendingWrites &&
+                        document.data()['createdBy'] == userId,
+                  )
                   .length;
               if (counts.every((itemTotal) => itemTotal != null)) {
                 controller.add(

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 
-/// Modern Balanced Graphite Ambient Background for Site Pulse dashboards.
-/// Slightly lighter charcoal slate canvas that provides high contrast for white cards
-/// without being pitch-black.
+/// Modern Harmonious Ambient Background for Site Pulse dashboards.
+/// Uses a refined cool-neutral slate canvas (Zinc-100 / Slate-100) with a gentle
+/// ambient violet mist that creates balanced, elegant contrast with white cards and buttons
+/// without harsh or jarring contrast.
 class AppPageBackground extends StatelessWidget {
   final Widget child;
 
@@ -13,36 +14,36 @@ class AppPageBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF1B1B24), // Balanced graphite slate canvas
+        color: Color(0xFFEAECF0), // Refined neutral slate canvas
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF262235), // Soft violet-slate top ambient
-            Color(0xFF1E1E28), // Balanced charcoal graphite body
-            Color(0xFF171720), // Subtle grounding base
+            Color(0xFFEBE8F6), // Subtle soft violet ambient mist at top
+            Color(0xFFEAECF0), // Smooth neutral transition
+            Color(0xFFE3E6EB), // Grounded cool slate base
           ],
-          stops: [0.0, 0.45, 1.0],
+          stops: [0.0, 0.35, 1.0],
         ),
       ),
       child: Stack(
         children: [
-          // Ambient decorative glow orbs (ignored for pointer events)
+          // Soft ambient decorative glow orbs (ignored for pointer events)
           Positioned.fill(
             child: IgnorePointer(
               child: Stack(
                 children: [
                   Positioned(
-                    top: -20,
+                    top: -30,
                     right: -30,
                     child: Container(
-                      width: 260,
-                      height: 260,
+                      width: 240,
+                      height: 240,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            AppColors.primary.withValues(alpha: 0.18),
+                            AppColors.primary.withValues(alpha: 0.08),
                             Colors.transparent,
                           ],
                         ),
@@ -50,16 +51,16 @@ class AppPageBackground extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    top: 240,
+                    top: 200,
                     left: -40,
                     child: Container(
-                      width: 220,
-                      height: 220,
+                      width: 200,
+                      height: 200,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            const Color(0xFF6366F1).withValues(alpha: 0.14),
+                            const Color(0xFF6366F1).withValues(alpha: 0.06),
                             Colors.transparent,
                           ],
                         ),

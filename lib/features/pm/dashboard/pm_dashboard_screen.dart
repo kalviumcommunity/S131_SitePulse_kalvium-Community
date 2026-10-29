@@ -392,15 +392,15 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                                  color: AppColors.textPrimary,
                                 ),
                       ),
                       const Spacer(),
                       Text(
                         'Tap site to inspect',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
-                          color: Colors.white.withValues(alpha: 0.65),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],

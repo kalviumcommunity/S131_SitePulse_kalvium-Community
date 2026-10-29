@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:site_pulse/data/models/app_user.dart';
@@ -15,11 +16,9 @@ class FirestoreAuthRepository implements AuthRepository {
   final StreamController<RepositoryError> _errorController =
       StreamController<RepositoryError>.broadcast();
 
-  FirestoreAuthRepository({
-    FirebaseAuth? auth,
-    FirebaseFirestore? firestore,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreAuthRepository({FirebaseAuth? auth, FirebaseFirestore? firestore})
+    : _auth = auth ?? FirebaseAuth.instance,
+      _firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
   AppUser? get currentUser => _currentUser;
@@ -29,53 +28,52 @@ class FirestoreAuthRepository implements AuthRepository {
 
   @override
   Stream<AppUser?> watchCurrentUser() {
-    return _authStateStream ??= _auth
-        .authStateChanges()
-        .asyncMap((firebaseUser) async {
-          if (firebaseUser == null) {
-            _currentUser = null;
-            return null;
-          }
+    return _authStateStream ??= _auth.authStateChanges().asyncMap((
+      firebaseUser,
+    ) async {
+      if (firebaseUser == null) {
+        _currentUser = null;
+        return null;
+      }
 
-          try {
-            // Default source: Source.serverAndCache (works offline after first login)
-            final doc = await _firestore
-                .collection('users')
-                .doc(firebaseUser.uid)
-                .get();
+      try {
+        // Default source: Source.serverAndCache (works offline after first login)
+        final doc = await _firestore
+            .collection('users')
+            .doc(firebaseUser.uid)
+            .get();
 
-            if (!doc.exists || doc.data() == null) {
-              await _auth.signOut();
-              _currentUser = null;
-              return null;
-            }
+        if (!doc.exists || doc.data() == null) {
+          await _auth.signOut();
+          _currentUser = null;
+          return null;
+        }
 
-            final data = doc.data()!;
-            final appUser = AppUser(
-              uid: firebaseUser.uid,
-              role: UserRole.fromString(data['role'] as String? ?? ''),
-              name: data['name'] as String? ?? '',
-              siteId: data['siteId'] as String?,
-              hasPendingWrites: doc.metadata.hasPendingWrites,
-            );
-            _currentUser = appUser;
-            return appUser;
-          } catch (e, st) {
-            _errorController.add(
-              RepositoryError(
-                operation: 'watchCurrentUser',
-                message: e.toString(),
-                error: e,
-                stackTrace: st,
-              ),
-            );
-            if (_currentUser?.uid == firebaseUser.uid) {
-              return _currentUser;
-            }
-            return null;
-          }
-        })
-        .asBroadcastStream();
+        final data = doc.data()!;
+        final appUser = AppUser(
+          uid: firebaseUser.uid,
+          role: UserRole.fromString(data['role'] as String? ?? ''),
+          name: data['name'] as String? ?? '',
+          siteId: data['siteId'] as String?,
+          hasPendingWrites: doc.metadata.hasPendingWrites,
+        );
+        _currentUser = appUser;
+        return appUser;
+      } catch (e, st) {
+        _errorController.add(
+          RepositoryError(
+            operation: 'watchCurrentUser',
+            message: e.toString(),
+            error: e,
+            stackTrace: st,
+          ),
+        );
+        if (_currentUser?.uid == firebaseUser.uid) {
+          return _currentUser;
+        }
+        return null;
+      }
+    }).asBroadcastStream();
   }
 
   @override
@@ -126,11 +124,7 @@ class FirestoreAuthRepository implements AuthRepository {
       throw failure;
     } on AuthFailure catch (e) {
       _errorController.add(
-        RepositoryError(
-          operation: 'signIn',
-          message: e.message,
-          error: e,
-        ),
+        RepositoryError(operation: 'signIn', message: e.message, error: e),
       );
       rethrow;
     } catch (e, st) {
@@ -173,12 +167,7 @@ class FirestoreAuthRepository implements AuthRepository {
 
   @override
   void switchUser(String uid) {
-    _errorController.add(
-      RepositoryError(
-        operation: 'switchUser',
-        message: 'switchUser is only supported in fake implementations.',
-      ),
-    );
+    // Real authentication is controlled by FirebaseAuth.
   }
 
   bool _isNetworkError(Object error) {

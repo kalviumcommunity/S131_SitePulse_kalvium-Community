@@ -20,7 +20,6 @@ Widget buildCompleteApp({
   FakeIncidentRepository? incidentRepo,
   String? initialLocation,
 }) {
-  currentAuthRepository = authRepo;
   final router = buildRouter(
     firebaseReady: true,
     authRepository: authRepo,

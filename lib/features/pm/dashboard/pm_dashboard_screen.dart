@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
+import 'package:site_pulse/core/utils/date_ranges.dart';
 import 'package:site_pulse/core/widgets/app_page_background.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
@@ -22,31 +23,56 @@ final _allSitesProvider = StreamProvider.autoDispose<List<Site>>((ref) {
   return ref.watch(siteRepositoryProvider).watchSites();
 });
 
-final _allMaterialsProvider =
-    StreamProvider.autoDispose<List<sp.Material>>((ref) {
-  return ref.watch(materialRepositoryProvider).watchMaterials();
-});
+final _allMaterialsProvider = StreamProvider.autoDispose
+    .family<List<sp.Material>, String?>((ref, siteId) {
+      return ref
+          .watch(materialRepositoryProvider)
+          .watchMaterials(siteId: siteId);
+    });
 
-final _siteWorkersProvider =
-    StreamProvider.autoDispose.family<List<Worker>, String>((ref, siteId) {
-  return ref.watch(workerRepositoryProvider).watchWorkers(siteId);
-});
+final _siteWorkersProvider = StreamProvider.autoDispose
+    .family<List<Worker>, String>((ref, siteId) {
+      return ref.watch(workerRepositoryProvider).watchWorkers(siteId);
+    });
 
 final _pmIncidentsProvider = StreamProvider.autoDispose
-    .family<List<Incident>, DateTimeRange?>((ref, range) {
-  return ref.watch(incidentRepositoryProvider).watchIncidents(
-        startDate: range?.start,
-        endDate: range?.end,
-      );
-});
+    .family<List<Incident>, _PmDashboardQuery>((ref, query) {
+      return ref
+          .watch(incidentRepositoryProvider)
+          .watchIncidents(
+            siteId: query.siteId,
+            startDate: query.range.start,
+            endDate: query.range.end,
+          );
+    });
 
 final _pmAttendanceProvider = StreamProvider.autoDispose
-    .family<List<AttendanceEntry>, DateTimeRange?>((ref, range) {
-  return ref.watch(attendanceRepositoryProvider).watchAttendance(
-        startDate: range?.start,
-        endDate: range?.end,
-      );
-});
+    .family<List<AttendanceEntry>, _PmDashboardQuery>((ref, query) {
+      return ref
+          .watch(attendanceRepositoryProvider)
+          .watchAttendance(
+            siteId: query.siteId,
+            startDate: query.range.start,
+            endDate: query.range.end,
+          );
+    });
+
+class _PmDashboardQuery {
+  const _PmDashboardQuery(this.siteId, this.range);
+
+  final String? siteId;
+  final DateTimeRange range;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _PmDashboardQuery &&
+      siteId == other.siteId &&
+      range.start == other.range.start &&
+      range.end == other.range.end;
+
+  @override
+  int get hashCode => Object.hash(siteId, range.start, range.end);
+}
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -66,18 +92,23 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _dateRange = DateTimeRange(
-      start: DateTime(now.year, now.month, now.day)
-          .subtract(const Duration(days: 6)),
-      end: DateTime(now.year, now.month, now.day, 23, 59, 59),
-    );
+    _dateRange = lastSevenDays();
   }
 
   String _formatRangeLabel(DateTimeRange r) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${r.start.day} ${months[r.start.month - 1]} – ${r.end.day} ${months[r.end.month - 1]}';
   }
@@ -111,8 +142,19 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
     if (picked != null) {
       setState(() {
         _dateRange = DateTimeRange(
-          start: DateTime(picked.start.year, picked.start.month, picked.start.day),
-          end: DateTime(picked.end.year, picked.end.month, picked.end.day, 23, 59, 59),
+          start: DateTime(
+            picked.start.year,
+            picked.start.month,
+            picked.start.day,
+          ),
+          end: DateTime(
+            picked.end.year,
+            picked.end.month,
+            picked.end.day,
+            23,
+            59,
+            59,
+          ),
         );
       });
     }
@@ -124,9 +166,10 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
     final user = authRepo.currentUser;
 
     final sitesAsync = ref.watch(_allSitesProvider);
-    final materialsAsync = ref.watch(_allMaterialsProvider);
-    final incidentsAsync = ref.watch(_pmIncidentsProvider(_dateRange));
-    final attendanceAsync = ref.watch(_pmAttendanceProvider(_dateRange));
+    final query = _PmDashboardQuery(_selectedSiteId, _dateRange);
+    final materialsAsync = ref.watch(_allMaterialsProvider(_selectedSiteId));
+    final incidentsAsync = ref.watch(_pmIncidentsProvider(query));
+    final attendanceAsync = ref.watch(_pmAttendanceProvider(query));
 
     return Scaffold(
       appBar: AppBar(
@@ -152,18 +195,47 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
           onRetry: () => ref.invalidate(_allSitesProvider),
         ),
         data: (sites) {
-          final materials = materialsAsync.value ?? [];
-          final incidents = incidentsAsync.value ?? [];
-          final attendance = attendanceAsync.value ?? [];
+          if (materialsAsync.isLoading ||
+              incidentsAsync.isLoading ||
+              attendanceAsync.isLoading) {
+            return const LoadingView(message: 'Loading dashboard metrics…');
+          }
+          if (materialsAsync.hasError ||
+              incidentsAsync.hasError ||
+              attendanceAsync.hasError) {
+            final error =
+                materialsAsync.error ??
+                incidentsAsync.error ??
+                attendanceAsync.error;
+            return ErrorView(
+              message: 'Failed to load dashboard metrics: $error',
+              onRetry: () {
+                ref.invalidate(_allMaterialsProvider(_selectedSiteId));
+                ref.invalidate(_pmIncidentsProvider(query));
+                ref.invalidate(_pmAttendanceProvider(query));
+              },
+            );
+          }
+          if (!materialsAsync.hasValue ||
+              !incidentsAsync.hasValue ||
+              !attendanceAsync.hasValue) {
+            return const LoadingView(message: 'Loading dashboard metrics…');
+          }
+
+          final materials = materialsAsync.value!;
+          final incidents = incidentsAsync.value!;
+          final attendance = attendanceAsync.value!;
 
           // ── Metrics Calculations ─────────────────────────────────
           // 1. Crew Attendance %
-          String attendancePercentText = '100%';
+          var attendancePercentText = '—';
           if (attendance.isNotEmpty) {
-            final present =
-                attendance.where((a) => a.status == AttendanceStatus.present).length;
-            final half =
-                attendance.where((a) => a.status == AttendanceStatus.half).length;
+            final present = attendance
+                .where((a) => a.status == AttendanceStatus.present)
+                .length;
+            final half = attendance
+                .where((a) => a.status == AttendanceStatus.half)
+                .length;
             final rate = ((present + (half * 0.5)) / attendance.length) * 100;
             attendancePercentText = '${rate.toStringAsFixed(0)}%';
           }
@@ -172,8 +244,9 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
           final lowStockCount = materials.where((m) => isLowStock(m)).length;
 
           // 3. High severity incidents count
-          final highIncidentsCount =
-              incidents.where((i) => isHighSeverity(i.severity)).length;
+          final highIncidentsCount = incidents
+              .where((i) => isHighSeverity(i.severity))
+              .length;
 
           // Filter sites
           final displayedSites = _selectedSiteId == null
@@ -183,9 +256,9 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
           return RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(_allSitesProvider);
-              ref.invalidate(_allMaterialsProvider);
-              ref.invalidate(_pmIncidentsProvider(_dateRange));
-              ref.invalidate(_pmAttendanceProvider(_dateRange));
+              ref.invalidate(_allMaterialsProvider(_selectedSiteId));
+              ref.invalidate(_pmIncidentsProvider(query));
+              ref.invalidate(_pmAttendanceProvider(query));
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -205,8 +278,9 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                         children: [
                           CircleAvatar(
                             radius: 24,
-                            backgroundColor:
-                                AppColors.primary.withValues(alpha: 0.12),
+                            backgroundColor: AppColors.primary.withValues(
+                              alpha: 0.12,
+                            ),
                             child: const Icon(
                               Icons.business_center,
                               color: AppColors.primary,
@@ -220,12 +294,8 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                               children: [
                                 Text(
                                   user?.name ?? 'Project Manager',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
@@ -316,8 +386,11 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.calendar_month,
-                                  size: 18, color: AppColors.primary),
+                              const Icon(
+                                Icons.calendar_month,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 _formatRangeLabel(_dateRange),
@@ -426,8 +499,11 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
 
                         // Calculate site specific incident flags
                         final siteHighIncidents = incidents
-                            .where((i) =>
-                                i.siteId == site.id && isHighSeverity(i.severity))
+                            .where(
+                              (i) =>
+                                  i.siteId == site.id &&
+                                  isHighSeverity(i.severity),
+                            )
                             .length;
 
                         return _SiteDashboardCard(
@@ -435,7 +511,11 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                           site: site,
                           lastSyncedText: _formatLastSynced(site.lastEntryAt),
                           isStale: isStale,
-                          hasLowStock: lowStockCount > 0,
+                          hasLowStock: materials.any(
+                            (material) =>
+                                material.siteId == site.id &&
+                                isLowStock(material),
+                          ),
                           highIncidentsCount: siteHighIncidents,
                           onTap: () => context.push('/pm/site/${site.id}'),
                         );
@@ -500,10 +580,7 @@ class _MetricCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -550,7 +627,11 @@ class _SiteDashboardCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final workersAsync = ref.watch(_siteWorkersProvider(site.id));
-    final crewCount = workersAsync.value?.where((w) => w.active).length ?? 0;
+    final crewStatus = workersAsync.when(
+      data: (workers) => '${workers.where((w) => w.active).length} crew active',
+      loading: () => 'Loading crew…',
+      error: (_, _) => 'Crew unavailable',
+    );
 
     return Card(
       elevation: 1.5,
@@ -572,7 +653,11 @@ class _SiteDashboardCard extends ConsumerWidget {
               // Top Row: Site Name & Last Synced
               Row(
                 children: [
-                  const Icon(Icons.location_city, color: AppColors.primary, size: 22),
+                  const Icon(
+                    Icons.location_city,
+                    color: AppColors.primary,
+                    size: 22,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -584,10 +669,14 @@ class _SiteDashboardCard extends ConsumerWidget {
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
-                      color: isStale ? Colors.amber.shade100 : Colors.grey.shade100,
+                      color: isStale
+                          ? Colors.amber.shade100
+                          : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -595,7 +684,9 @@ class _SiteDashboardCard extends ConsumerWidget {
                         Icon(
                           Icons.sync,
                           size: 13,
-                          color: isStale ? Colors.amber.shade900 : Colors.grey.shade700,
+                          color: isStale
+                              ? Colors.amber.shade900
+                              : Colors.grey.shade700,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -627,7 +718,7 @@ class _SiteDashboardCard extends ConsumerWidget {
                   // Crew Count Badge
                   _StatusChip(
                     icon: Icons.groups,
-                    label: '$crewCount crew active',
+                    label: crewStatus,
                     color: const Color(0xFF1976D2),
                   ),
 

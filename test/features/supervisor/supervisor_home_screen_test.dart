@@ -1,12 +1,41 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:site_pulse/data/models/app_user.dart';
+import 'package:site_pulse/data/models/attendance_entry.dart';
 import 'package:site_pulse/data/models/site.dart';
 import 'package:site_pulse/data/providers.dart';
 import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/supervisor/home/supervisor_home_screen.dart';
+
+class _TrackingAttendanceRepository extends FakeAttendanceRepository {
+  _TrackingAttendanceRepository({super.initialAttendance});
+
+  DateTime? startDate;
+  DateTime? endDate;
+  String? siteId;
+
+  @override
+  Stream<List<AttendanceEntry>> watchAttendance({
+    String? siteId,
+    DateTime? date,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    this.siteId = siteId;
+    this.startDate = startDate;
+    this.endDate = endDate;
+    return super.watchAttendance(
+      siteId: siteId,
+      date: date,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+}
 
 Widget buildScreen({
   FakeAuthRepository? authRepo,
@@ -21,12 +50,10 @@ Widget buildScreen({
     role: UserRole.supervisor,
     siteId: 'site-1',
   );
-  final actualAuth = authRepo ??
-      FakeAuthRepository(
-        initialUser: user,
-        initialUsers: [user],
-      );
-  final actualSite = siteRepo ??
+  final actualAuth =
+      authRepo ?? FakeAuthRepository(initialUser: user, initialUsers: [user]);
+  final actualSite =
+      siteRepo ??
       FakeSiteRepository(
         initialSites: [
           Site(
@@ -46,15 +73,18 @@ Widget buildScreen({
       ),
       GoRoute(
         path: '/supervisor/attendance',
-        builder: (context, state) => const Scaffold(body: Text('Attendance Route')),
+        builder: (context, state) =>
+            const Scaffold(body: Text('Attendance Route')),
       ),
       GoRoute(
         path: '/supervisor/material',
-        builder: (context, state) => const Scaffold(body: Text('Material Route')),
+        builder: (context, state) =>
+            const Scaffold(body: Text('Material Route')),
       ),
       GoRoute(
         path: '/supervisor/incident',
-        builder: (context, state) => const Scaffold(body: Text('Incident Route')),
+        builder: (context, state) =>
+            const Scaffold(body: Text('Incident Route')),
       ),
       GoRoute(
         path: '/supervisor/roster',
@@ -71,19 +101,22 @@ Widget buildScreen({
     overrides: [
       authRepositoryProvider.overrideWithValue(actualAuth),
       siteRepositoryProvider.overrideWithValue(actualSite),
-      if (attendanceRepo != null) attendanceRepositoryProvider.overrideWithValue(attendanceRepo),
-      if (materialRepo != null) materialRepositoryProvider.overrideWithValue(materialRepo),
-      if (incidentRepo != null) incidentRepositoryProvider.overrideWithValue(incidentRepo),
+      if (attendanceRepo != null)
+        attendanceRepositoryProvider.overrideWithValue(attendanceRepo),
+      if (materialRepo != null)
+        materialRepositoryProvider.overrideWithValue(materialRepo),
+      if (incidentRepo != null)
+        incidentRepositoryProvider.overrideWithValue(incidentRepo),
     ],
-    child: MaterialApp.router(
-      routerConfig: router,
-    ),
+    child: MaterialApp.router(routerConfig: router),
   );
 }
 
 void main() {
   group('SupervisorHomeScreen Widget Tests', () {
-    testWidgets('renders supervisor name, role, and site name in header', (tester) async {
+    testWidgets('renders supervisor name, role, and site name in header', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -105,7 +138,9 @@ void main() {
       expect(find.byKey(const Key('action_roster')), findsOneWidget);
     });
 
-    testWidgets('tapping action cards navigates to corresponding routes', (tester) async {
+    testWidgets('tapping action cards navigates to corresponding routes', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -116,7 +151,9 @@ void main() {
       expect(find.text('Attendance Route'), findsOneWidget);
     });
 
-    testWidgets('tapping material card navigates to material route', (tester) async {
+    testWidgets('tapping material card navigates to material route', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -126,7 +163,9 @@ void main() {
       expect(find.text('Material Route'), findsOneWidget);
     });
 
-    testWidgets('tapping incident card navigates to incident route', (tester) async {
+    testWidgets('tapping incident card navigates to incident route', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -136,7 +175,9 @@ void main() {
       expect(find.text('Incident Route'), findsOneWidget);
     });
 
-    testWidgets('tapping roster card navigates to roster route', (tester) async {
+    testWidgets('tapping roster card navigates to roster route', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -146,7 +187,9 @@ void main() {
       expect(find.text('Roster Route'), findsOneWidget);
     });
 
-    testWidgets('renders recent activity feed items from repositories', (tester) async {
+    testWidgets('renders recent activity feed items from repositories', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -155,10 +198,36 @@ void main() {
       expect(find.text('Latest 10 items'), findsOneWidget);
     });
 
+    testWidgets(
+      'home attendance query is scoped to the site and last seven days',
+      (tester) async {
+        final attendanceRepo = _TrackingAttendanceRepository(
+          initialAttendance: [],
+        );
+
+        await tester.pumpWidget(buildScreen(attendanceRepo: attendanceRepo));
+        await tester.pumpAndSettle();
+
+        expect(attendanceRepo.siteId, 'site-1');
+        expect(attendanceRepo.startDate, isNotNull);
+        expect(attendanceRepo.endDate, isNotNull);
+        expect(
+          attendanceRepo.endDate!.difference(attendanceRepo.startDate!).inDays,
+          6,
+        );
+        expect(attendanceRepo.startDate!.hour, 0);
+        expect(attendanceRepo.startDate!.minute, 0);
+        expect(attendanceRepo.endDate!.hour, 23);
+        expect(attendanceRepo.endDate!.minute, 59);
+      },
+    );
+
     testWidgets('shows empty view when no activity exists', (tester) async {
       final emptyIncidentRepo = FakeIncidentRepository(initialIncidents: []);
       final emptyMaterialRepo = FakeMaterialRepository(initialMaterials: []);
-      final emptyAttendanceRepo = FakeAttendanceRepository(initialAttendance: []);
+      final emptyAttendanceRepo = FakeAttendanceRepository(
+        initialAttendance: [],
+      );
 
       await tester.pumpWidget(
         buildScreen(

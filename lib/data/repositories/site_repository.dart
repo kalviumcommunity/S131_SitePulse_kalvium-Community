@@ -8,9 +8,5 @@ abstract class SiteRepository {
   /// Supervisor or site detail reads single site
   Stream<Site?> watchSite(String siteId);
 
-  /// Fire-and-forget write: returns document ID immediately,
-  /// failures reported through errorStream.
-  String createOrUpdateSite(Site site);
-
   Stream<RepositoryError> get errorStream;
 }

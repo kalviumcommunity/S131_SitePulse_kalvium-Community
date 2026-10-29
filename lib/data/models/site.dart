@@ -1,8 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
+
 DateTime? _parseDateTime(dynamic value) {
   if (value == null) return null;
   if (value is DateTime) return value;
   if (value is String) return DateTime.tryParse(value);
   if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+  if (value is Timestamp) return value.toDate();
   try {
     final dynamic dynamicVal = value;
     if (dynamicVal.toDate is Function) {
@@ -58,6 +61,28 @@ class Site {
       lastEntryAt: _parseDateTime(map['lastEntryAt']),
       hasPendingWrites:
           (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
+    );
+  }
+
+  /// Firestore document data (excludes id and hasPendingWrites).
+  Map<String, dynamic> toFirestore() {
+    return {
+      'name': name,
+      if (lastEntryAt != null) 'lastEntryAt': Timestamp.fromDate(lastEntryAt!),
+    };
+  }
+
+  /// Construct from a Firestore document snapshot.
+  factory Site.fromFirestore(
+    String docId,
+    Map<String, dynamic> data, {
+    bool hasPendingWrites = false,
+  }) {
+    return Site(
+      id: docId,
+      name: data['name'] as String? ?? '',
+      lastEntryAt: _parseDateTime(data['lastEntryAt']),
+      hasPendingWrites: hasPendingWrites,
     );
   }
 

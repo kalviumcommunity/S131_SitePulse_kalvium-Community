@@ -5,3 +5,6 @@ export 'worker_repository.dart';
 export 'attendance_repository.dart';
 export 'material_repository.dart';
 export 'incident_repository.dart';
+export 'sync_status_repository.dart';
+export 'write_failure_sink.dart';
+export 'firestore/firestore_auth_repository.dart';

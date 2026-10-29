@@ -246,6 +246,20 @@ describe('Firestore Security Rules', () => {
       );
     });
 
+    it('supervisor cannot create or update attendance with an invalid status (assertFails)', async () => {
+      const db = testEnv.authenticatedContext('sup-1').firestore();
+      await assertFails(
+        db.doc('sites/site-1/attendance/att-invalid').set({
+          workerId: 'w-1',
+          date: '2026-10-26',
+          status: 'late',
+        })
+      );
+      await assertFails(
+        db.doc('sites/site-1/attendance/att-1').update({ status: 'late' })
+      );
+    });
+
     it('supervisor cannot create attendance on another site (assertFails)', async () => {
       const db = testEnv.authenticatedContext('sup-1').firestore();
       await assertFails(
@@ -276,6 +290,13 @@ describe('Firestore Security Rules', () => {
       const db = testEnv.authenticatedContext('sup-1').firestore();
       await assertSucceeds(
         db.doc('sites/site-1/materials/mat-1').update({ currentStock: 75 })
+      );
+    });
+
+    it('assigned supervisor cannot reduce currentStock below zero (assertFails)', async () => {
+      const db = testEnv.authenticatedContext('sup-1').firestore();
+      await assertFails(
+        db.doc('sites/site-1/materials/mat-1').update({ currentStock: -1 })
       );
     });
 
@@ -332,6 +353,18 @@ describe('Firestore Security Rules', () => {
           materialId: 'mat-1',
           qtyUsed: 0,
           remainingAfter: 80,
+          date: '2026-10-26T12:00:00.000Z',
+        })
+      );
+    });
+
+    it('supervisor cannot create materialLog when qtyUsed is not a number (assertFails)', async () => {
+      const db = testEnv.authenticatedContext('sup-1').firestore();
+      await assertFails(
+        db.doc('sites/site-1/materialLogs/log-not-number').set({
+          materialId: 'mat-1',
+          qtyUsed: '5',
+          remainingAfter: 75,
           date: '2026-10-26T12:00:00.000Z',
         })
       );

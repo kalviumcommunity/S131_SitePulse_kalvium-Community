@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
+
 import 'auth_controller.dart';
 import 'auth_failure.dart';
 

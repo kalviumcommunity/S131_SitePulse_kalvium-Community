@@ -17,11 +17,11 @@ import 'package:uuid/uuid.dart';
 // Providers
 // ---------------------------------------------------------------------------
 
-final _supervisorIncidentsProvider =
-    StreamProvider.autoDispose.family<List<Incident>, String?>((ref, siteId) {
-  final repo = ref.watch(incidentRepositoryProvider);
-  return repo.watchIncidents(siteId: (siteId != null && siteId.isNotEmpty) ? siteId : null);
-});
+final _supervisorIncidentsProvider = StreamProvider.autoDispose
+    .family<List<Incident>, String>((ref, siteId) {
+      final repo = ref.watch(incidentRepositoryProvider);
+      return repo.watchIncidents(siteId: siteId);
+    });
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -48,7 +48,9 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _errorSub = ref.read(incidentRepositoryProvider).errorStream.listen((err) {
+      _errorSub = ref.read(incidentRepositoryProvider).errorStream.listen((
+        err,
+      ) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -77,9 +79,7 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
       builder: (ctx) => AlertDialog(
         key: const Key('incident_confirm_dialog'),
         title: const Text('Submit Incident Report?'),
-        content: const Text(
-          'This record cannot be edited after submitting.',
-        ),
+        content: const Text('This record cannot be edited after submitting.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -106,7 +106,7 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
       severity: _selectedSeverity,
       description: _descriptionController.text.trim(),
       occurredAt: DateTime.now(),
-      siteId: siteId.isNotEmpty ? siteId : null,
+      siteId: siteId,
     );
 
     repo.reportIncident(incident); // fire-and-forget ✅
@@ -124,8 +124,18 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
 
   String _formatDate(DateTime d) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${d.day} ${months[d.month - 1]}  ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
@@ -159,7 +169,23 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authRepositoryProvider).currentUser;
-    final siteId = user?.siteId ?? '';
+    final siteId = user?.siteId;
+
+    if (siteId == null || siteId.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Safety Incidents'),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: OfflineBanner(),
+          ),
+        ),
+        body: const EmptyView(
+          message: 'No project site is assigned to this account.',
+        ),
+      );
+    }
+
     final incidentsAsync = ref.watch(_supervisorIncidentsProvider(siteId));
     final isEscalated = isHighSeverity(_selectedSeverity);
 
@@ -181,7 +207,10 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
               Container(
                 key: const Key('escalation_banner'),
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 color: Colors.red.shade50,
                 child: Row(
                   children: [
@@ -189,7 +218,7 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Immediate Escalation: High and Critical incidents automatically notify the Project Manager and safety team.',
+                        'High and critical incidents are flagged on the project manager\'s dashboard after sync.',
                         style: TextStyle(
                           color: Colors.red.shade900,
                           fontWeight: FontWeight.w600,
@@ -211,9 +240,8 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                   children: [
                     Text(
                       'Report New Safety Incident',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -247,10 +275,15 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                       decoration: InputDecoration(
                         hintText: 'Describe what occurred, hazards, and actions taken (min 10 characters)...',
                         border: const OutlineInputBorder(),
-                        helperText: '${_descriptionController.text.trim().length} / 10 min characters',
+                        helperText:
+                            '${_descriptionController.text.trim().length} / 10 min characters',
                         helperStyle: TextStyle(
-                          color: _isValid ? AppColors.success : Colors.grey.shade600,
-                          fontWeight: _isValid ? FontWeight.bold : FontWeight.normal,
+                          color: _isValid
+                              ? AppColors.success
+                              : Colors.grey.shade600,
+                          fontWeight: _isValid
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -262,7 +295,9 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                         key: const Key('submit_incident_button'),
                         icon: const Icon(Icons.send),
                         label: const Text('Submit Incident Report'),
-                        onPressed: _isValid ? () => _confirmAndSubmit(siteId) : null,
+                        onPressed: _isValid
+                            ? () => _confirmAndSubmit(siteId)
+                            : null,
                       ),
                     ),
                   ],
@@ -277,9 +312,8 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
                 'Recent Incident Reports',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 8),
@@ -293,7 +327,8 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: ErrorView(
                   message: 'Failed to load incidents: $e',
-                  onRetry: () => ref.invalidate(_supervisorIncidentsProvider(siteId)),
+                  onRetry: () =>
+                      ref.invalidate(_supervisorIncidentsProvider(siteId)),
                 ),
               ),
               data: (incidents) {
@@ -312,7 +347,10 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                 return ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
                   itemCount: sorted.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
@@ -336,7 +374,10 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                                 Icon(icon, color: color, size: 20),
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: color.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(6),

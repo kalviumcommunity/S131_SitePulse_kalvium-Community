@@ -16,15 +16,19 @@ import 'package:uuid/uuid.dart';
 // Providers
 // ---------------------------------------------------------------------------
 
-final _materialsProvider =
-    StreamProvider.autoDispose<List<sp.Material>>((ref) {
-  return ref.watch(materialRepositoryProvider).watchMaterials();
-});
+final _materialsProvider = StreamProvider.autoDispose
+    .family<List<sp.Material>, String>((ref, siteId) {
+      return ref
+          .watch(materialRepositoryProvider)
+          .watchMaterials(siteId: siteId);
+    });
 
-final _materialLogsProvider =
-    StreamProvider.autoDispose<List<MaterialLog>>((ref) {
-  return ref.watch(materialRepositoryProvider).watchMaterialLogs();
-});
+final _materialLogsProvider = StreamProvider.autoDispose
+    .family<List<MaterialLog>, String>((ref, siteId) {
+      return ref
+          .watch(materialRepositoryProvider)
+          .watchMaterialLogs(siteId: siteId);
+    });
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -39,7 +43,7 @@ class MaterialUsageScreen extends ConsumerStatefulWidget {
 }
 
 class _MaterialUsageScreenState extends ConsumerState<MaterialUsageScreen> {
-  String? _selectedMaterialId;
+  String? _selectedMaterialKey;
   double _qty = 1.0;
   StreamSubscription<dynamic>? _errorSub;
 
@@ -47,8 +51,9 @@ class _MaterialUsageScreenState extends ConsumerState<MaterialUsageScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _errorSub =
-          ref.read(materialRepositoryProvider).errorStream.listen((err) {
+      _errorSub = ref.read(materialRepositoryProvider).errorStream.listen((
+        err,
+      ) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -66,12 +71,13 @@ class _MaterialUsageScreenState extends ConsumerState<MaterialUsageScreen> {
     super.dispose();
   }
 
-  void _logUsage(sp.Material material) {
+  void _logUsage(String siteId, sp.Material material) {
     final repo = ref.read(materialRepositoryProvider);
     final logId = const Uuid().v4();
     repo.logUsage(
       materialId: material.id,
       qtyUsed: _qty,
+      siteId: siteId,
       date: DateTime.now(),
       logId: logId,
     ); // fire-and-forget ✅
@@ -86,16 +92,45 @@ class _MaterialUsageScreenState extends ConsumerState<MaterialUsageScreen> {
 
   String _formatDate(DateTime d) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${d.day} ${months[d.month - 1]}  ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 
+  String _materialKey(String siteId, String materialId) =>
+      '$siteId::$materialId';
+
   @override
   Widget build(BuildContext context) {
-    final materialsAsync = ref.watch(_materialsProvider);
-    final logsAsync = ref.watch(_materialLogsProvider);
+    final siteId = ref.watch(authRepositoryProvider).currentUser?.siteId;
+    if (siteId == null || siteId.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Material Usage'),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: OfflineBanner(),
+          ),
+        ),
+        body: const EmptyView(
+          message: 'No project site is assigned to this account.',
+        ),
+      );
+    }
+
+    final materialsAsync = ref.watch(_materialsProvider(siteId));
+    final logsAsync = ref.watch(_materialLogsProvider(siteId));
 
     return Scaffold(
       appBar: AppBar(
@@ -109,7 +144,7 @@ class _MaterialUsageScreenState extends ConsumerState<MaterialUsageScreen> {
         loading: () => const LoadingView(message: 'Loading materials…'),
         error: (e, _) => ErrorView(
           message: 'Failed to load materials: $e',
-          onRetry: () => ref.invalidate(_materialsProvider),
+          onRetry: () => ref.invalidate(_materialsProvider(siteId)),
         ),
         data: (materials) {
           if (materials.isEmpty) {
@@ -119,37 +154,49 @@ class _MaterialUsageScreenState extends ConsumerState<MaterialUsageScreen> {
           }
 
           // Default selection
-          if (_selectedMaterialId == null ||
-              !materials.any((m) => m.id == _selectedMaterialId)) {
+          if (_selectedMaterialKey == null ||
+              !materials.any(
+                (m) => _materialKey(siteId, m.id) == _selectedMaterialKey,
+              )) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
-                setState(() => _selectedMaterialId = materials.first.id);
+                setState(() {
+                  _selectedMaterialKey = _materialKey(
+                    siteId,
+                    materials.first.id,
+                  );
+                });
               }
             });
           }
 
           final selected = materials.firstWhere(
-            (m) => m.id == _selectedMaterialId,
+            (m) => _materialKey(siteId, m.id) == _selectedMaterialKey,
             orElse: () => materials.first,
           );
 
-          final projectedRemaining = (selected.currentStock - _qty)
-              .clamp(0.0, selected.currentStock);
+          final projectedRemaining = (selected.currentStock - _qty).clamp(
+            0.0,
+            selected.currentStock,
+          );
           final lowStock = isLowStock(selected);
-          final willBeLowest =
-              projectedRemaining <= selected.lowStockThreshold;
+          final willBeLowest = projectedRemaining <= selected.lowStockThreshold;
 
           return logsAsync.when(
             loading: () => const LoadingView(message: 'Loading logs…'),
             error: (e, _) => ErrorView(
               message: 'Failed to load logs: $e',
-              onRetry: () => ref.invalidate(_materialLogsProvider),
+              onRetry: () => ref.invalidate(_materialLogsProvider(siteId)),
             ),
             data: (allLogs) {
-              final recentLogs = allLogs
-                  .where((l) => l.materialId == selected.id)
-                  .toList()
-                ..sort((a, b) => b.date.compareTo(a.date));
+              final recentLogs =
+                  allLogs
+                      .where(
+                        (l) =>
+                            l.siteId == siteId && l.materialId == selected.id,
+                      )
+                      .toList()
+                    ..sort((a, b) => b.date.compareTo(a.date));
 
               return Column(
                 children: [
@@ -175,34 +222,38 @@ class _MaterialUsageScreenState extends ConsumerState<MaterialUsageScreen> {
                             decoration: const InputDecoration(
                               border: OutlineInputBorder(),
                               contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 4),
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
                                 key: const Key('material_dropdown'),
                                 isExpanded: true,
-                                value: selected.id,
+                                value: _materialKey(siteId, selected.id),
                                 items: materials
                                     .map(
-                                      (m) => DropdownMenuItem(
-                                        value: m.id,
+                                      (m) => DropdownMenuItem<String>(
+                                        value: _materialKey(siteId, m.id),
                                         child: Row(
                                           children: [
                                             Text(m.name),
                                             const Spacer(),
                                             if (isLowStock(m))
-                                              const Icon(Icons.warning_amber,
-                                                  size: 16,
-                                                  color: Colors.orange),
+                                              const Icon(
+                                                Icons.warning_amber,
+                                                size: 16,
+                                                color: Colors.orange,
+                                              ),
                                           ],
                                         ),
                                       ),
                                     )
                                     .toList(),
-                                onChanged: (id) {
-                                  if (id != null) {
+                                onChanged: (key) {
+                                  if (key != null) {
                                     setState(() {
-                                      _selectedMaterialId = id;
+                                      _selectedMaterialKey = key;
                                       _qty = 1.0;
                                     });
                                   }
@@ -249,7 +300,7 @@ class _MaterialUsageScreenState extends ConsumerState<MaterialUsageScreen> {
                               icon: const Icon(Icons.add_task),
                               label: const Text('Log Usage'),
                               onPressed: selected.currentStock > 0
-                                  ? () => _logUsage(selected)
+                                  ? () => _logUsage(siteId, selected)
                                   : null,
                             ),
                           ),
@@ -270,8 +321,9 @@ class _MaterialUsageScreenState extends ConsumerState<MaterialUsageScreen> {
                             ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              itemCount:
-                                  recentLogs.length > 10 ? 10 : recentLogs.length,
+                              itemCount: recentLogs.length > 10
+                                  ? 10
+                                  : recentLogs.length,
                               separatorBuilder: (_, _) =>
                                   const Divider(height: 1),
                               itemBuilder: (context, index) {
@@ -371,9 +423,12 @@ class _StockPreviewCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text('Stock Preview',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  'Stock Preview',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const Spacer(),
                 SyncChip(pending: pending),
               ],
@@ -397,9 +452,10 @@ class _StockPreviewCard extends StatelessWidget {
               Text(
                 '⚠ Stock will be at or below threshold after logging.',
                 style: TextStyle(
-                    color: Colors.deepOrange,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500),
+                  color: Colors.deepOrange,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ],
@@ -425,14 +481,16 @@ class _StockRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(label,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: Theme.of(context).colorScheme.outline)),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: Theme.of(context).colorScheme.outline),
+        ),
         const Spacer(),
-        Text(value,
-            style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+        Text(
+          value,
+          style: TextStyle(fontWeight: FontWeight.bold, color: color),
+        ),
       ],
     );
   }
@@ -457,12 +515,13 @@ class _LogTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListTile(
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: CircleAvatar(
         backgroundColor: theme.colorScheme.secondaryContainer,
-        child:
-            Icon(Icons.inventory_2, color: theme.colorScheme.onSecondaryContainer),
+        child: Icon(
+          Icons.inventory_2,
+          color: theme.colorScheme.onSecondaryContainer,
+        ),
       ),
       title: Text(
         '−${log.qtyUsed.toStringAsFixed(1)} $unit',
@@ -488,9 +547,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: Theme.of(context)
-          .textTheme
-          .labelLarge
+      style: Theme.of(context).textTheme.labelLarge
           ?.copyWith(color: Theme.of(context).colorScheme.outline),
     );
   }

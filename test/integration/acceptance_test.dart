@@ -79,6 +79,7 @@ void main() {
             openingStock: 100,
             currentStock: 45,
             lowStockThreshold: 20,
+            siteId: 'site-1',
           ),
         ],
       );

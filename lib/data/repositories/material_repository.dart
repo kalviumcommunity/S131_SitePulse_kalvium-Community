@@ -4,13 +4,14 @@ import 'package:site_pulse/data/repositories/repository_error.dart';
 
 abstract class MaterialRepository {
   /// Watch all materials
-  Stream<List<Material>> watchMaterials();
+  Stream<List<Material>> watchMaterials({String? siteId});
 
   /// Watch a single material
-  Stream<Material?> watchMaterial(String id);
+  Stream<Material?> watchMaterial(String id, {String? siteId});
 
   /// Watch material usage logs with optional material and date-range filters
   Stream<List<MaterialLog>> watchMaterialLogs({
+    String? siteId,
     String? materialId,
     DateTime? startDate,
     DateTime? endDate,
@@ -24,6 +25,7 @@ abstract class MaterialRepository {
   String logUsage({
     required String materialId,
     required double qtyUsed,
+    String? siteId,
     DateTime? date,
     String? logId,
   });

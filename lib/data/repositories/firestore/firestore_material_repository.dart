@@ -38,7 +38,11 @@ class FirestoreMaterialRepository implements MaterialRepository {
   String get _currentUid => _auth.currentUser?.uid ?? '';
 
   @override
-  Stream<List<Material>> watchMaterials() {
+  Stream<List<Material>> watchMaterials({String? siteId}) {
+    if (siteId != null) {
+      if (siteId.isEmpty) return Stream.value([]);
+      return _watchSiteMaterials(siteId);
+    }
     return combineSiteStreams(watchAllSites(_db), _watchSiteMaterials);
   }
 
@@ -64,6 +68,7 @@ class FirestoreMaterialRepository implements MaterialRepository {
               currentStock: (data['currentStock'] as num?)?.toDouble() ?? 0,
               lowStockThreshold:
                   (data['lowStockThreshold'] as num?)?.toDouble() ?? 0,
+              siteId: siteId,
               hasPendingWrites: doc.metadata.hasPendingWrites,
             );
             _knownMaterials.putIfAbsent(doc.id, () => {})[siteId] =
@@ -74,21 +79,31 @@ class FirestoreMaterialRepository implements MaterialRepository {
   }
 
   @override
-  Stream<Material?> watchMaterial(String id) {
-    return watchMaterials().map((materials) {
-      for (final material in materials) {
-        if (material.id == id) return material;
-      }
-      return null;
+  Stream<Material?> watchMaterial(String id, {String? siteId}) {
+    if (siteId != null && siteId.isEmpty) return Stream.value(null);
+    return watchMaterials(siteId: siteId).map((materials) {
+      final matches = materials.where((material) => material.id == id);
+      return matches.length == 1 ? matches.first : null;
     });
   }
 
   @override
   Stream<List<MaterialLog>> watchMaterialLogs({
+    String? siteId,
     String? materialId,
     DateTime? startDate,
     DateTime? endDate,
   }) {
+    if (siteId != null) {
+      if (siteId.isEmpty) return Stream.value([]);
+      final range = _effectiveRange(startDate, endDate);
+      return _watchSiteLogs(
+        siteId: siteId,
+        materialId: materialId,
+        startDate: range.$1,
+        endDate: range.$2,
+      );
+    }
     final range = _effectiveRange(startDate, endDate);
     return combineSiteStreams(
       watchAllSites(_db),
@@ -140,6 +155,7 @@ class FirestoreMaterialRepository implements MaterialRepository {
               qtyUsed: (data['qtyUsed'] as num?)?.toDouble() ?? 0,
               remainingAfter: (data['remainingAfter'] as num?)?.toDouble() ?? 0,
               date: date,
+              siteId: siteId,
               hasPendingWrites: doc.metadata.hasPendingWrites,
             );
           }).toList(),
@@ -162,6 +178,7 @@ class FirestoreMaterialRepository implements MaterialRepository {
   String logUsage({
     required String materialId,
     required double qtyUsed,
+    String? siteId,
     DateTime? date,
     String? logId,
   }) {
@@ -180,18 +197,22 @@ class FirestoreMaterialRepository implements MaterialRepository {
     }
 
     final candidates = _knownMaterials[materialId]?.values.toList() ?? [];
-    if (candidates.length != 1) {
+    final known = siteId == null
+        ? (candidates.length == 1 ? candidates.single : null)
+        : _knownMaterials[materialId]?[siteId];
+    if (known == null) {
       _reportInputFailure(
         'logUsage',
         candidates.isEmpty
             ? 'Material $materialId is not available in the local cache'
-            : 'Material $materialId is ambiguous across sites',
+            : siteId == null
+            ? 'Material $materialId is ambiguous across sites'
+            : 'Material $materialId is not available for site $siteId',
         id,
       );
       return id;
     }
 
-    final known = candidates.single;
     if (qtyUsed > known.material.currentStock) {
       _reportInputFailure(
         'logUsage',

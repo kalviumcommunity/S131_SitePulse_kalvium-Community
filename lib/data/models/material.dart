@@ -5,6 +5,7 @@ class Material {
   final double openingStock;
   final double currentStock;
   final double lowStockThreshold;
+  final String? siteId;
   final bool hasPendingWrites;
 
   const Material({
@@ -14,6 +15,7 @@ class Material {
     required this.openingStock,
     required this.currentStock,
     required this.lowStockThreshold,
+    this.siteId,
     this.hasPendingWrites = false,
   });
 
@@ -24,6 +26,7 @@ class Material {
     double? openingStock,
     double? currentStock,
     double? lowStockThreshold,
+    String? siteId,
     bool? hasPendingWrites,
   }) {
     return Material(
@@ -33,6 +36,7 @@ class Material {
       openingStock: openingStock ?? this.openingStock,
       currentStock: currentStock ?? this.currentStock,
       lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
+      siteId: siteId ?? this.siteId,
       hasPendingWrites: hasPendingWrites ?? this.hasPendingWrites,
     );
   }
@@ -45,6 +49,7 @@ class Material {
       'openingStock': openingStock,
       'currentStock': currentStock,
       'lowStockThreshold': lowStockThreshold,
+      if (siteId != null) 'siteId': siteId,
       'hasPendingWrites': hasPendingWrites,
     };
   }
@@ -59,10 +64,9 @@ class Material {
       unit: map['unit'] as String? ?? '',
       openingStock: (map['openingStock'] as num?)?.toDouble() ?? 0.0,
       currentStock: (map['currentStock'] as num?)?.toDouble() ?? 0.0,
-      lowStockThreshold:
-          (map['lowStockThreshold'] as num?)?.toDouble() ?? 0.0,
-      hasPendingWrites:
-          (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
+      lowStockThreshold: (map['lowStockThreshold'] as num?)?.toDouble() ?? 0.0,
+      siteId: map['siteId'] as String?,
+      hasPendingWrites: (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
     );
   }
 
@@ -77,20 +81,22 @@ class Material {
           openingStock == other.openingStock &&
           currentStock == other.currentStock &&
           lowStockThreshold == other.lowStockThreshold &&
+          siteId == other.siteId &&
           hasPendingWrites == other.hasPendingWrites;
 
   @override
   int get hashCode => Object.hash(
-        id,
-        name,
-        unit,
-        openingStock,
-        currentStock,
-        lowStockThreshold,
-        hasPendingWrites,
-      );
+    id,
+    name,
+    unit,
+    openingStock,
+    currentStock,
+    lowStockThreshold,
+    siteId,
+    hasPendingWrites,
+  );
 
   @override
   String toString() =>
-      'Material(id: $id, name: $name, unit: $unit, openingStock: $openingStock, currentStock: $currentStock, lowStockThreshold: $lowStockThreshold, hasPendingWrites: $hasPendingWrites)';
+      'Material(id: $id, name: $name, unit: $unit, openingStock: $openingStock, currentStock: $currentStock, lowStockThreshold: $lowStockThreshold, siteId: $siteId, hasPendingWrites: $hasPendingWrites)';
 }

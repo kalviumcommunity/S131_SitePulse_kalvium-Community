@@ -51,28 +51,32 @@ final _siteAttendanceProvider = StreamProvider.autoDispose
           .watchAttendance(siteId: siteId);
     });
 
-final _materialLogsProvider = StreamProvider.autoDispose<List<MaterialLog>>((
-  ref,
-) {
-  return ref.watch(materialRepositoryProvider).watchMaterialLogs();
-});
+final _materialLogsProvider = StreamProvider.autoDispose
+    .family<List<MaterialLog>, String>((ref, siteId) {
+      return ref
+          .watch(materialRepositoryProvider)
+          .watchMaterialLogs(siteId: siteId);
+    });
 
-final _materialsProvider = StreamProvider.autoDispose<List<sp.Material>>((ref) {
-  return ref.watch(materialRepositoryProvider).watchMaterials();
-});
+final _materialsProvider = StreamProvider.autoDispose
+    .family<List<sp.Material>, String>((ref, siteId) {
+      return ref
+          .watch(materialRepositoryProvider)
+          .watchMaterials(siteId: siteId);
+    });
 
 final _siteIncidentsProvider = StreamProvider.autoDispose
     .family<List<Incident>, String>((ref, siteId) {
       return ref
           .watch(incidentRepositoryProvider)
-          .watchIncidents(siteId: siteId.isNotEmpty ? siteId : null);
+          .watchIncidents(siteId: siteId);
     });
 
 final supervisorActivityProvider = Provider.autoDispose
     .family<AsyncValue<List<ActivityItem>>, String>((ref, siteId) {
       final attendanceAsync = ref.watch(_siteAttendanceProvider(siteId));
-      final materialLogsAsync = ref.watch(_materialLogsProvider);
-      final materialsAsync = ref.watch(_materialsProvider);
+      final materialLogsAsync = ref.watch(_materialLogsProvider(siteId));
+      final materialsAsync = ref.watch(_materialsProvider(siteId));
       final incidentsAsync = ref.watch(_siteIncidentsProvider(siteId));
 
       if (attendanceAsync.isLoading && !attendanceAsync.hasValue) {
@@ -109,7 +113,9 @@ final supervisorActivityProvider = Provider.autoDispose
       final materials = materialsAsync.value ?? [];
       final incidents = incidentsAsync.value ?? [];
 
-      final materialMap = {for (final m in materials) m.id: m};
+      final materialMap = {
+        for (final m in materials) '${m.siteId ?? siteId}::${m.id}': m,
+      };
       final List<ActivityItem> items = [];
 
       // Group attendance records by day
@@ -144,8 +150,9 @@ final supervisorActivityProvider = Provider.autoDispose
 
       // Material logs
       for (final log in logs) {
-        final matName = materialMap[log.materialId]?.name ?? 'Material';
-        final unit = materialMap[log.materialId]?.unit ?? 'units';
+        final materialKey = '${log.siteId ?? siteId}::${log.materialId}';
+        final matName = materialMap[materialKey]?.name ?? 'Material';
+        final unit = materialMap[materialKey]?.unit ?? 'units';
         items.add(
           ActivityItem(
             id: 'mat_${log.id}',
@@ -266,8 +273,8 @@ class SupervisorHomeScreen extends ConsumerWidget {
         onRefresh: () async {
           ref.invalidate(_supervisorSiteProvider(siteId));
           ref.invalidate(_siteAttendanceProvider(siteId));
-          ref.invalidate(_materialLogsProvider);
-          ref.invalidate(_materialsProvider);
+          ref.invalidate(_materialLogsProvider(siteId));
+          ref.invalidate(_materialsProvider(siteId));
           ref.invalidate(_siteIncidentsProvider(siteId));
         },
         child: SingleChildScrollView(
@@ -487,7 +494,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
                     message: 'Failed to load activity: $e',
                     onRetry: () {
                       ref.invalidate(_siteAttendanceProvider(siteId));
-                      ref.invalidate(_materialLogsProvider);
+                      ref.invalidate(_materialLogsProvider(siteId));
                       ref.invalidate(_siteIncidentsProvider(siteId));
                     },
                   ),

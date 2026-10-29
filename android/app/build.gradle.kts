@@ -9,8 +9,8 @@ plugins {
 
 android {
     namespace = "com.sitepulse.site_pulse"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 37
+    // compileSdk = flutter.compileSdkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -37,6 +37,12 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+        }
+        debug {
+            // Skip NDK symbol stripping (NDK 28 binaries not fully installed)
+            packaging {
+                jniLibs.keepDebugSymbols.add("**/*.so")
+            }
         }
     }
 }

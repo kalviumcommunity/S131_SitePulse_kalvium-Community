@@ -16,11 +16,18 @@ class AppColors {
   static const surface = Color(0xFFFAFAFA); // Zinc-50 — barely-there off-white
   static const surfaceContainer = Color(0xFFF4F4F5); // Zinc-100 — input fill
   static const cardBackground = Color(0xFFFFFFFF); // Pure crisp white card
-  static const headerBackground = Color(0xFF09090B); // Zinc-950 — near-perfect black
+  static const headerBackground = Color(
+    0xFF09090B,
+  ); // Zinc-950 — near-perfect black
 
   // Typography
   static const textPrimary = Color(0xFF09090B); // Zinc-950 — deep sharp text
-  static const textSecondary = Color(0xFF71717A); // Zinc-500 — clean muted subtext
+  static const textSecondary = Color.fromARGB(
+    255,
+    56,
+    56,
+    61,
+  ); // Zinc-500 — clean muted subtext
   static const border = Color(0xFFE4E4E7); // Zinc-200 — crisp hairline border
 
   // Status Indicators
@@ -85,9 +92,7 @@ ThemeData buildTheme() {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         textStyle: const TextStyle(
           fontSize: 15,
@@ -101,14 +106,9 @@ ThemeData buildTheme() {
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.primary,
         side: const BorderSide(color: AppColors.primary, width: 1.5),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        textStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
       ),
     ),
 
@@ -129,10 +129,7 @@ ThemeData buildTheme() {
         borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
-      labelStyle: const TextStyle(
-        color: AppColors.textSecondary,
-        fontSize: 14,
-      ),
+      labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
       hintStyle: TextStyle(
         color: AppColors.textSecondary.withValues(alpha: 0.6),
         fontSize: 14,
@@ -148,9 +145,7 @@ ThemeData buildTheme() {
         fontSize: 14,
       ),
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     ),
 
     dividerTheme: const DividerThemeData(

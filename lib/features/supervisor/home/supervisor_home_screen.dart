@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
+import 'package:site_pulse/core/utils/date_ranges.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
 import 'package:site_pulse/core/widgets/sync_chip.dart';
@@ -46,9 +47,14 @@ final _supervisorSiteProvider = StreamProvider.autoDispose
 final _siteAttendanceProvider = StreamProvider.autoDispose
     .family<List<AttendanceEntry>, String>((ref, siteId) {
       if (siteId.isEmpty) return Stream.value([]);
+      final range = lastSevenDays();
       return ref
           .watch(attendanceRepositoryProvider)
-          .watchAttendance(siteId: siteId);
+          .watchAttendance(
+            siteId: siteId,
+            startDate: range.start,
+            endDate: range.end,
+          );
     });
 
 final _materialLogsProvider = StreamProvider.autoDispose

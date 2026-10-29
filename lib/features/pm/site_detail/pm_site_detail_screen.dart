@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
+import 'package:site_pulse/core/utils/date_ranges.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
 import 'package:site_pulse/core/widgets/sync_chip.dart';
@@ -107,15 +108,7 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    final now = DateTime.now();
-    _dateRange = DateTimeRange(
-      start: DateTime(
-        now.year,
-        now.month,
-        now.day,
-      ).subtract(const Duration(days: 29)),
-      end: DateTime(now.year, now.month, now.day, 23, 59, 59),
-    );
+    _dateRange = lastSevenDays();
   }
 
   @override

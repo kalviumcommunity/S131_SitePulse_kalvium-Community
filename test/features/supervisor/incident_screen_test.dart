@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,18 +10,39 @@ import 'package:site_pulse/data/providers.dart';
 import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/supervisor/incident/incident_screen.dart';
 
-Widget buildScreen({FakeIncidentRepository? incidentRepo, FakeAuthRepository? authRepo}) {
+class _CountingIncidentRepository extends FakeIncidentRepository {
+  int watchIncidentsCalls = 0;
+
+  @override
+  Stream<List<Incident>> watchIncidents({
+    String? siteId,
+    DateTime? startDate,
+    DateTime? endDate,
+    Severity? severity,
+  }) {
+    watchIncidentsCalls++;
+    return super.watchIncidents(
+      siteId: siteId,
+      startDate: startDate,
+      endDate: endDate,
+      severity: severity,
+    );
+  }
+}
+
+Widget buildScreen({
+  FakeIncidentRepository? incidentRepo,
+  FakeAuthRepository? authRepo,
+}) {
   const initialUser = AppUser(
     uid: 'sup-1',
     name: 'Test Supervisor',
     role: UserRole.supervisor,
     siteId: 'site-1',
   );
-  final actualAuth = authRepo ??
-      FakeAuthRepository(
-        initialUser: initialUser,
-        initialUsers: [initialUser],
-      );
+  final actualAuth =
+      authRepo ??
+      FakeAuthRepository(initialUser: initialUser, initialUsers: [initialUser]);
   final actualIncident = incidentRepo ?? FakeIncidentRepository();
 
   return ProviderScope(
@@ -33,6 +56,31 @@ Widget buildScreen({FakeIncidentRepository? incidentRepo, FakeAuthRepository? au
 
 void main() {
   group('IncidentScreen Widget Tests', () {
+    testWidgets('signed-out user makes no incident query or report action', (
+      tester,
+    ) async {
+      final authRepository = FakeAuthRepository()..signOut();
+      final incidentRepository = _CountingIncidentRepository();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authRepositoryProvider.overrideWithValue(authRepository),
+            incidentRepositoryProvider.overrideWithValue(incidentRepository),
+          ],
+          child: const MaterialApp(home: IncidentScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('No project site is assigned to this account.'),
+        findsOneWidget,
+      );
+      expect(incidentRepository.watchIncidentsCalls, 0);
+      expect(find.byKey(const Key('submit_incident_button')), findsNothing);
+    });
+
     testWidgets('renders form fields and submit button', (tester) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
@@ -40,48 +88,64 @@ void main() {
 
       expect(find.byKey(const Key('severity_minor')), findsOneWidget);
       expect(find.byKey(const Key('severity_critical')), findsOneWidget);
-      expect(find.byKey(const Key('incident_description_field')), findsOneWidget);
+      expect(
+        find.byKey(const Key('incident_description_field')),
+        findsOneWidget,
+      );
       expect(find.byKey(const Key('submit_incident_button')), findsOneWidget);
     });
 
-    testWidgets('submit button is disabled when description is shorter than 10 characters', (tester) async {
-      await tester.pumpWidget(buildScreen());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+    testWidgets(
+      'submit button is disabled when description is shorter than 10 characters',
+      (tester) async {
+        await tester.pumpWidget(buildScreen());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      final btn = tester.widget<FilledButton>(find.byKey(const Key('submit_incident_button')));
-      expect(btn.onPressed, isNull);
+        final btn = tester.widget<FilledButton>(
+          find.byKey(const Key('submit_incident_button')),
+        );
+        expect(btn.onPressed, isNull);
 
-      await tester.enterText(find.byKey(const Key('incident_description_field')), 'Short');
-      await tester.pump();
+        await tester.enterText(
+          find.byKey(const Key('incident_description_field')),
+          'Short',
+        );
+        await tester.pump();
 
-      final btnStillDisabled = tester.widget<FilledButton>(find.byKey(const Key('submit_incident_button')));
-      expect(btnStillDisabled.onPressed, isNull);
-    });
+        final btnStillDisabled = tester.widget<FilledButton>(
+          find.byKey(const Key('submit_incident_button')),
+        );
+        expect(btnStillDisabled.onPressed, isNull);
+      },
+    );
 
-    testWidgets('escalation warning shows when High or Critical selected, hides when Minor selected', (tester) async {
-      await tester.pumpWidget(buildScreen());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+    testWidgets(
+      'escalation warning shows when High or Critical selected, hides when Minor selected',
+      (tester) async {
+        await tester.pumpWidget(buildScreen());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // Initially Minor is selected, banner should not be present
-      expect(find.byKey(const Key('escalation_banner')), findsNothing);
+        // Initially Minor is selected, banner should not be present
+        expect(find.byKey(const Key('escalation_banner')), findsNothing);
 
-      // Tap High
-      await tester.tap(find.byKey(const Key('severity_high')));
-      await tester.pump();
-      expect(find.byKey(const Key('escalation_banner')), findsOneWidget);
+        // Tap High
+        await tester.tap(find.byKey(const Key('severity_high')));
+        await tester.pump();
+        expect(find.byKey(const Key('escalation_banner')), findsOneWidget);
 
-      // Tap Critical
-      await tester.tap(find.byKey(const Key('severity_critical')));
-      await tester.pump();
-      expect(find.byKey(const Key('escalation_banner')), findsOneWidget);
+        // Tap Critical
+        await tester.tap(find.byKey(const Key('severity_critical')));
+        await tester.pump();
+        expect(find.byKey(const Key('escalation_banner')), findsOneWidget);
 
-      // Tap Minor
-      await tester.tap(find.byKey(const Key('severity_minor')));
-      await tester.pump();
-      expect(find.byKey(const Key('escalation_banner')), findsNothing);
-    });
+        // Tap Minor
+        await tester.tap(find.byKey(const Key('severity_minor')));
+        await tester.pump();
+        expect(find.byKey(const Key('escalation_banner')), findsNothing);
+      },
+    );
 
     testWidgets('tapping submit opens confirmation dialog', (tester) async {
       await tester.pumpWidget(buildScreen());
@@ -98,32 +162,40 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('incident_confirm_dialog')), findsOneWidget);
-      expect(find.text('This record cannot be edited after submitting.'), findsOneWidget);
-    });
-
-    testWidgets('confirming submit dialog reports incident and shows saved snackbar', (tester) async {
-      final repo = FakeIncidentRepository(initialIncidents: []);
-      await tester.pumpWidget(buildScreen(incidentRepo: repo));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      await tester.enterText(
-        find.byKey(const Key('incident_description_field')),
-        'Scaffolding issue on floor 3 reported by team',
+      expect(
+        find.text('This record cannot be edited after submitting.'),
+        findsOneWidget,
       );
-      await tester.pump();
-
-      await tester.tap(find.byKey(const Key('submit_incident_button')));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('confirm_submit_button')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Saved on this device'), findsOneWidget);
-      // Verify description cleared
-      final field = tester.widget<TextFormField>(find.byKey(const Key('incident_description_field')));
-      expect(field.controller?.text, isEmpty);
     });
+
+    testWidgets(
+      'confirming submit dialog reports incident and shows saved snackbar',
+      (tester) async {
+        final repo = FakeIncidentRepository(initialIncidents: []);
+        await tester.pumpWidget(buildScreen(incidentRepo: repo));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.enterText(
+          find.byKey(const Key('incident_description_field')),
+          'Scaffolding issue on floor 3 reported by team',
+        );
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('submit_incident_button')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('confirm_submit_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Saved on this device'), findsOneWidget);
+        // Verify description cleared
+        final field = tester.widget<TextFormField>(
+          find.byKey(const Key('incident_description_field')),
+        );
+        expect(field.controller?.text, isEmpty);
+      },
+    );
   });
 
   group('isHighSeverity Threshold Pure Function Tests', () {

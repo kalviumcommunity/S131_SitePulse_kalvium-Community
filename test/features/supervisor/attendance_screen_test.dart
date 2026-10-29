@@ -1,11 +1,44 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/data/models/app_user.dart';
 import 'package:site_pulse/data/models/attendance_entry.dart';
+import 'package:site_pulse/data/models/worker.dart';
 import 'package:site_pulse/data/providers.dart';
 import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/supervisor/attendance/attendance_screen.dart';
+
+class _CountingWorkerRepository extends FakeWorkerRepository {
+  int watchWorkersCalls = 0;
+
+  @override
+  Stream<List<Worker>> watchWorkers(String siteId, {bool? activeOnly}) {
+    watchWorkersCalls++;
+    return super.watchWorkers(siteId, activeOnly: activeOnly);
+  }
+}
+
+class _CountingAttendanceRepository extends FakeAttendanceRepository {
+  int watchAttendanceCalls = 0;
+
+  @override
+  Stream<List<AttendanceEntry>> watchAttendance({
+    String? siteId,
+    DateTime? date,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    watchAttendanceCalls++;
+    return super.watchAttendance(
+      siteId: siteId,
+      date: date,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+}
 
 void main() {
   // Supervisor user for site-1 (seeded with workers w-101..w-110)
@@ -22,18 +55,46 @@ void main() {
         authRepositoryProvider.overrideWithValue(
           FakeAuthRepository(initialUser: user),
         ),
-        workerRepositoryProvider
-            .overrideWithValue(FakeWorkerRepository()),
-        attendanceRepositoryProvider
-            .overrideWithValue(FakeAttendanceRepository()),
+        workerRepositoryProvider.overrideWithValue(FakeWorkerRepository()),
+        attendanceRepositoryProvider.overrideWithValue(
+          FakeAttendanceRepository(),
+        ),
       ],
       child: const MaterialApp(home: AttendanceScreen()),
     );
   }
 
   group('AttendanceScreen Widget Tests', () {
-    testWidgets('renders date picker button with "Today" label',
-        (tester) async {
+    testWidgets('signed-out user makes no repository query', (tester) async {
+      final authRepository = FakeAuthRepository()..signOut();
+      final workerRepository = _CountingWorkerRepository();
+      final attendanceRepository = _CountingAttendanceRepository();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authRepositoryProvider.overrideWithValue(authRepository),
+            workerRepositoryProvider.overrideWithValue(workerRepository),
+            attendanceRepositoryProvider.overrideWithValue(
+              attendanceRepository,
+            ),
+          ],
+          child: const MaterialApp(home: AttendanceScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('No project site is assigned to this account.'),
+        findsOneWidget,
+      );
+      expect(workerRepository.watchWorkersCalls, 0);
+      expect(attendanceRepository.watchAttendanceCalls, 0);
+    });
+
+    testWidgets('renders date picker button with "Today" label', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
@@ -60,8 +121,9 @@ void main() {
       expect(find.byKey(const Key('save_attendance_button')), findsOneWidget);
     });
 
-    testWidgets('tapping Save shows "Saved on this device" snackbar',
-        (tester) async {
+    testWidgets('tapping Save shows "Saved on this device" snackbar', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -87,8 +149,9 @@ void main() {
       expect(find.textContaining('No active workers'), findsOneWidget);
     });
 
-    testWidgets('each worker has an AttendanceToggle and SyncChip',
-        (tester) async {
+    testWidgets('each worker has an AttendanceToggle and SyncChip', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -150,27 +213,30 @@ void main() {
       expect(AttendanceStatus.fromString('absent'), AttendanceStatus.absent);
     });
 
-    test('FakeAttendanceRepository recordAttendance stores and retrieves', () async {
-      final repo = FakeAttendanceRepository();
-      final entry = AttendanceEntry(
-        id: AttendanceEntry.buildId(
-          siteId: 'site-1',
+    test(
+      'FakeAttendanceRepository recordAttendance stores and retrieves',
+      () async {
+        final repo = FakeAttendanceRepository();
+        final entry = AttendanceEntry(
+          id: AttendanceEntry.buildId(
+            siteId: 'site-1',
+            workerId: 'w-999',
+            date: DateTime(2024, 6, 1),
+          ),
           workerId: 'w-999',
           date: DateTime(2024, 6, 1),
-        ),
-        workerId: 'w-999',
-        date: DateTime(2024, 6, 1),
-        status: AttendanceStatus.absent,
-        siteId: 'site-1',
-      );
+          status: AttendanceStatus.absent,
+          siteId: 'site-1',
+        );
 
-      final id = repo.recordAttendance(entry);
-      expect(id, 'site-1_w-999_20240601');
+        final id = repo.recordAttendance(entry);
+        expect(id, 'site-1_w-999_20240601');
 
-      final all = await repo
-          .watchAttendance(siteId: 'site-1', date: DateTime(2024, 6, 1))
-          .first;
-      expect(all.any((e) => e.workerId == 'w-999'), isTrue);
-    });
+        final all = await repo
+            .watchAttendance(siteId: 'site-1', date: DateTime(2024, 6, 1))
+            .first;
+        expect(all.any((e) => e.workerId == 'w-999'), isTrue);
+      },
+    );
   });
 }

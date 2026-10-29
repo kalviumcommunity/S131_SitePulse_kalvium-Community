@@ -6,6 +6,7 @@ import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/core/widgets/widgets.dart';
 import 'package:site_pulse/data/models/worker.dart';
 import 'package:site_pulse/data/providers.dart';
+import 'package:uuid/uuid.dart';
 
 const List<String> kAvailableTrades = [
   'Mason',
@@ -100,9 +101,11 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
     String siteId,
     List<Worker> activeWorkers,
   ) {
+    final workerId = const Uuid().v4();
     showDialog<void>(
       context: context,
       builder: (dialogCtx) => _AddWorkerDialog(
+        workerId: workerId,
         siteId: siteId,
         existingActiveWorkers: activeWorkers,
         onSave: (worker) {
@@ -372,11 +375,13 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
 }
 
 class _AddWorkerDialog extends StatefulWidget {
+  final String workerId;
   final String siteId;
   final List<Worker> existingActiveWorkers;
   final ValueChanged<Worker> onSave;
 
   const _AddWorkerDialog({
+    required this.workerId,
     required this.siteId,
     required this.existingActiveWorkers,
     required this.onSave,
@@ -426,7 +431,7 @@ class _AddWorkerDialogState extends State<_AddWorkerDialog> {
     }
 
     final newWorker = Worker(
-      id: 'w_${DateTime.now().microsecondsSinceEpoch}',
+      id: widget.workerId,
       name: _nameController.text.trim(),
       workerCode: _workerCodeController.text.trim().toUpperCase(),
       trade: _selectedTrade,

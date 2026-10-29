@@ -134,6 +134,13 @@ void main() {
         await tester.tap(find.byKey(const Key('severity_high')));
         await tester.pump();
         expect(find.byKey(const Key('escalation_banner')), findsOneWidget);
+        expect(
+          find.text(
+            'High and critical incidents are flagged on the project manager\'s dashboard after sync.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.textContaining('automatically notify'), findsNothing);
 
         // Tap Critical
         await tester.tap(find.byKey(const Key('severity_critical')));

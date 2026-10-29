@@ -216,7 +216,7 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Immediate Escalation: High and Critical incidents automatically notify the Project Manager and safety team.',
+                        'High and critical incidents are flagged on the project manager\'s dashboard after sync.',
                         style: TextStyle(
                           color: Colors.red.shade900,
                           fontWeight: FontWeight.w600,

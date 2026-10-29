@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -12,6 +14,24 @@ import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:site_pulse/data/repositories/sync_status_repository.dart';
 import 'package:site_pulse/data/repositories/write_failure_sink.dart';
 import 'package:site_pulse/data/repositories/fakes/fakes.dart';
+import 'package:site_pulse/data/repositories/firestore/firestore_auth_repository.dart';
+
+const useFakes = bool.fromEnvironment('USE_FAKES', defaultValue: true);
+
+final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
+  return FirebaseAuth.instance;
+});
+
+final firestoreProvider = Provider<FirebaseFirestore>((ref) {
+  return FirebaseFirestore.instance;
+});
+
+final realAuthRepositoryProvider = Provider<AuthRepository>((ref) {
+  return FirestoreAuthRepository(
+    auth: ref.watch(firebaseAuthProvider),
+    firestore: ref.watch(firestoreProvider),
+  );
+});
 import 'package:site_pulse/data/repositories/firestore/firestore.dart';
 
 /// Tests use in-memory repositories unless USE_FAKES is explicitly defined.
@@ -21,6 +41,10 @@ final bool useFakes =
         Platform.environment['FLUTTER_TEST'] == 'true');
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  if (useFakes) {
+    return FakeAuthRepository();
+  }
+  return ref.watch(realAuthRepositoryProvider);
   final repository = FakeAuthRepository();
   _forwardRepositoryFailures(
     errorStream: repository.errorStream,

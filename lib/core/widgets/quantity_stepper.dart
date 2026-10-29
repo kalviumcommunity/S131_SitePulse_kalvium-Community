@@ -64,9 +64,9 @@ class QuantityStepper extends StatelessWidget {
           constraints: const BoxConstraints(minWidth: 100),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Theme.of(context).colorScheme.outline),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

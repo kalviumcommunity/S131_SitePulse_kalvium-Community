@@ -1,89 +1,89 @@
 import 'package:flutter/material.dart';
 
-/// Modern Techno Design System — "Light-Dark" Telemetry Edition
-/// High-precision engineering aesthetic:
-/// - Comfortable, soft dark slate-graphite canvas ("light-dark", avoids harsh pure OLED black)
-/// - Vibrant Cyber-Mint / Pulse-Emerald primary (zero blue, high-visibility telemetry)
-/// - Clean hairline borders and crisp typography
+/// Modern SaaS Design System — "Zinc + Violet" Edition
+/// Linear / Vercel-inspired aesthetic:
+/// - Zinc-50 warm neutral canvas (barely-there off-white)
+/// - Zinc-950 near-perfect-black header — sharp authority
+/// - Deep Violet-700 primary — premium, modern, zero blue
+/// - White crisp cards with Zinc-200 hairline borders
 class AppColors {
-  // Primary: Pulse Cyber Mint (Zero Blue)
-  static const primary = Color(0xFF00DC82); // Vibrant Electric Mint
-  static const primaryDark = Color(0xFF059669);
-  static const primaryLight = Color(0xFF34D399);
-  static const onPrimary = Color(0xFF022614); // Deep pine for high-contrast button labels
+  // Primary: Deep Violet (zero blue, very modern 2024-25 SaaS)
+  static const primary = Color(0xFF7C3AED); // Violet-700
+  static const primaryDark = Color(0xFF6D28D9); // Violet-800
+  static const primaryLight = Color(0xFFA78BFA); // Violet-400
 
-  // Soft "Light-Dark" Charcoal & Slate Canvas
-  static const surface = Color(0xFF12161F); // Soft dark graphite canvas (non-glare)
-  static const surfaceContainer = Color(0xFF1A202C); // Elevated container / input fill
-  static const cardBackground = Color(0xFF1A202C); // High-precision card background
-  static const headerBackground = Color(0xFF0D1017); // Sleek deep slate header
+  // Canvas & Surfaces — Zinc neutrals
+  static const surface = Color(0xFFFAFAFA); // Zinc-50 — barely-there off-white
+  static const surfaceContainer = Color(0xFFF4F4F5); // Zinc-100 — input fill
+  static const cardBackground = Color(0xFFFFFFFF); // Pure crisp white card
+  static const headerBackground = Color(0xFF09090B); // Zinc-950 — near-perfect black
 
-  // Typography & Text
-  static const textPrimary = Color(0xFFF1F5F9); // Crisp Slate-100 high-contrast text
-  static const textSecondary = Color(0xFF94A3B8); // Slate-400 clean technical subtext
-  static const border = Color(0xFF2D3748); // Slate hairline precision border
+  // Typography
+  static const textPrimary = Color(0xFF09090B); // Zinc-950 — deep sharp text
+  static const textSecondary = Color(0xFF71717A); // Zinc-500 — clean muted subtext
+  static const border = Color(0xFFE4E4E7); // Zinc-200 — crisp hairline border
 
-  // High-Visibility Telemetry Indicators (No Blue)
-  static const critical = Color(0xFFF87171); // Safety Alert Crimson
-  static const warning = Color(0xFFFBBF24); // Telemetry Amber
-  static const success = Color(0xFF34D399); // Nominal Telemetry Mint
+  // Status Indicators
+  static const critical = Color(0xFFDC2626); // Red-600
+  static const warning = Color(0xFFD97706); // Amber-600
+  static const success = Color(0xFF16A34A); // Green-600
 }
 
 ThemeData buildTheme() {
-  const colorScheme = ColorScheme.dark(
+  const colorScheme = ColorScheme.light(
     primary: AppColors.primary,
-    onPrimary: AppColors.onPrimary,
-    primaryContainer: Color(0xFF064E3B),
-    onPrimaryContainer: AppColors.primaryLight,
-    secondary: AppColors.primaryLight,
-    onSecondary: AppColors.onPrimary,
+    onPrimary: Colors.white,
+    primaryContainer: Color(0xFFEDE9FE), // Violet-100
+    onPrimaryContainer: Color(0xFF3B0764), // Violet-950
+    secondary: Color(0xFFA78BFA), // Violet-400
+    onSecondary: Color(0xFF1E0048),
     surface: AppColors.surface,
     onSurface: AppColors.textPrimary,
     onSurfaceVariant: AppColors.textSecondary,
     outline: AppColors.border,
     error: AppColors.critical,
-    onError: Colors.black,
+    onError: Colors.white,
   );
 
   return ThemeData(
     useMaterial3: true,
-    brightness: Brightness.dark,
+    brightness: Brightness.light,
     colorScheme: colorScheme,
     scaffoldBackgroundColor: AppColors.surface,
     cardColor: AppColors.cardBackground,
 
-    // Sleek High-Tech Header
+    // Zinc-950 near-black AppBar — ultra-sharp premium
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.headerBackground,
-      foregroundColor: AppColors.textPrimary,
+      foregroundColor: Colors.white,
       elevation: 0,
       centerTitle: false,
       titleTextStyle: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
         letterSpacing: -0.3,
-        color: AppColors.textPrimary,
+        color: Colors.white,
       ),
-      iconTheme: IconThemeData(color: AppColors.textPrimary),
-      actionsIconTheme: IconThemeData(color: AppColors.textPrimary),
+      iconTheme: IconThemeData(color: Colors.white),
+      actionsIconTheme: IconThemeData(color: Colors.white),
     ),
 
-    // Precision Flat Cards with 1px Hairline Slate Border
+    // Clean white cards with Zinc-200 border — no shadow, flat precision
     cardTheme: CardThemeData(
       color: AppColors.cardBackground,
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         side: const BorderSide(color: AppColors.border, width: 1),
       ),
     ),
 
-    // High-Contrast Cyber Mint Action Buttons
+    // Deep Violet filled button
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
+        foregroundColor: Colors.white,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -91,8 +91,8 @@ ThemeData buildTheme() {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         textStyle: const TextStyle(
           fontSize: 15,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.2,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.1,
         ),
       ),
     ),
@@ -100,7 +100,7 @@ ThemeData buildTheme() {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.primary,
-        side: BorderSide(color: AppColors.primary.withValues(alpha: 0.6), width: 1.2),
+        side: const BorderSide(color: AppColors.primary, width: 1.5),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -112,10 +112,10 @@ ThemeData buildTheme() {
       ),
     ),
 
-    // Modern Technical Inputs
+    // Clean white inputs with Zinc-200 border, violet focus ring
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.surfaceContainer,
+      fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -127,25 +127,29 @@ ThemeData buildTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.8),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
-      labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+      labelStyle: const TextStyle(
+        color: AppColors.textSecondary,
+        fontSize: 14,
+      ),
       hintStyle: TextStyle(
         color: AppColors.textSecondary.withValues(alpha: 0.6),
         fontSize: 14,
       ),
     ),
 
+    // Zinc-950 snackbar — sharp and legible
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: const Color(0xFF1E2636),
+      backgroundColor: AppColors.headerBackground,
       contentTextStyle: const TextStyle(
-        color: AppColors.textPrimary,
-        fontWeight: FontWeight.w600,
+        color: Colors.white,
+        fontWeight: FontWeight.w500,
+        fontSize: 14,
       ),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: AppColors.border),
       ),
     ),
 
@@ -157,6 +161,7 @@ ThemeData buildTheme() {
 
     dialogTheme: DialogThemeData(
       backgroundColor: AppColors.cardBackground,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: const BorderSide(color: AppColors.border),

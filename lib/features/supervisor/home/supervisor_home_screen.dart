@@ -366,7 +366,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
                     _ActionCard(
                       key: const Key('action_material'),
                       icon: Icons.inventory_2,
-                      iconColor: const Color(0xFFE65100),
+                      iconColor: Color(0xFFB45309),
                       title: 'Log Material Usage',
                       subtitle: 'Record material consumption and track stock',
                       onTap: () => context.push('/supervisor/material'),

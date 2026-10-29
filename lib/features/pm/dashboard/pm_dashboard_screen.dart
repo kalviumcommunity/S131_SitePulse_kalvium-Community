@@ -266,11 +266,9 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                           height: 48,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.border),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String?>(
@@ -308,11 +306,9 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                           height: 48,
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.border),
                           ),
                           child: Row(
                             children: [

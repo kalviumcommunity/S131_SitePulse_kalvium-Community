@@ -357,7 +357,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
                     _ActionCard(
                       key: const Key('action_attendance'),
                       icon: Icons.how_to_reg,
-                      iconColor: const Color(0xFF1976D2),
+                      iconColor: AppColors.primary,
                       title: 'Mark Attendance',
                       subtitle: 'Record daily presence for site crew',
                       onTap: () => context.push('/supervisor/attendance'),

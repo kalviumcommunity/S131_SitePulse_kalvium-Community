@@ -1,62 +1,74 @@
 import 'package:flutter/material.dart';
 
-/// Modern Techno Design System
-/// Precision engineering aesthetic: cool slate canvas, electric precision blue,
-/// crisp telemetry accents, and clean micro-radii.
+/// Modern Techno Design System — "Light-Dark" Telemetry Edition
+/// High-precision engineering aesthetic:
+/// - Comfortable, soft dark slate-graphite canvas ("light-dark", avoids harsh pure OLED black)
+/// - Vibrant Cyber-Mint / Pulse-Emerald primary (zero blue, high-visibility telemetry)
+/// - Clean hairline borders and crisp typography
 class AppColors {
-  // Primary Precision Tech Blue (Electric / Cyber-Cobalt)
-  static const primary = Color(0xFF0284C7);
-  static const primaryDark = Color(0xFF0369A1);
-  static const primaryLight = Color(0xFF38BDF8);
+  // Primary: Pulse Cyber Mint (Zero Blue)
+  static const primary = Color(0xFF00DC82); // Vibrant Electric Mint
+  static const primaryDark = Color(0xFF059669);
+  static const primaryLight = Color(0xFF34D399);
+  static const onPrimary = Color(0xFF022614); // Deep pine for high-contrast button labels
 
-  // Cool Technical Canvas & Surfaces (Tailwind Slate scale)
-  static const surface = Color(0xFFF8FAFC); // Slate-50 Canvas
-  static const surfaceContainer = Color(0xFFF1F5F9); // Slate-100 Container
-  static const cardBackground = Color(0xFFFFFFFF); // Pure Crisp Card
-  static const headerBackground = Color(0xFF0F172A); // Slate-900 High-Tech Header
+  // Soft "Light-Dark" Charcoal & Slate Canvas
+  static const surface = Color(0xFF12161F); // Soft dark graphite canvas (non-glare)
+  static const surfaceContainer = Color(0xFF1A202C); // Elevated container / input fill
+  static const cardBackground = Color(0xFF1A202C); // High-precision card background
+  static const headerBackground = Color(0xFF0D1017); // Sleek deep slate header
 
   // Typography & Text
-  static const textPrimary = Color(0xFF0F172A); // Slate-900 Sharp Text
-  static const textSecondary = Color(0xFF475569); // Slate-600 Subtext
-  static const border = Color(0xFFE2E8F0); // Slate-200 Precision Hairline
+  static const textPrimary = Color(0xFFF1F5F9); // Crisp Slate-100 high-contrast text
+  static const textSecondary = Color(0xFF94A3B8); // Slate-400 clean technical subtext
+  static const border = Color(0xFF2D3748); // Slate hairline precision border
 
-  // High-Visibility Telemetry Indicators
-  static const critical = Color(0xFFDC2626); // Alert Crimson / Hazard Red
-  static const warning = Color(0xFFD97706); // Telemetry Amber
-  static const success = Color(0xFF059669); // Nominal Emerald
+  // High-Visibility Telemetry Indicators (No Blue)
+  static const critical = Color(0xFFF87171); // Safety Alert Crimson
+  static const warning = Color(0xFFFBBF24); // Telemetry Amber
+  static const success = Color(0xFF34D399); // Nominal Telemetry Mint
 }
 
 ThemeData buildTheme() {
-  final colorScheme = ColorScheme.fromSeed(
-    seedColor: AppColors.primary,
+  const colorScheme = ColorScheme.dark(
     primary: AppColors.primary,
+    onPrimary: AppColors.onPrimary,
+    primaryContainer: Color(0xFF064E3B),
+    onPrimaryContainer: AppColors.primaryLight,
+    secondary: AppColors.primaryLight,
+    onSecondary: AppColors.onPrimary,
     surface: AppColors.surface,
     onSurface: AppColors.textPrimary,
-    brightness: Brightness.light,
+    onSurfaceVariant: AppColors.textSecondary,
+    outline: AppColors.border,
+    error: AppColors.critical,
+    onError: Colors.black,
   );
 
   return ThemeData(
     useMaterial3: true,
+    brightness: Brightness.dark,
     colorScheme: colorScheme,
     scaffoldBackgroundColor: AppColors.surface,
+    cardColor: AppColors.cardBackground,
 
-    // High-Tech Slate AppBar
+    // Sleek High-Tech Header
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.headerBackground,
-      foregroundColor: Colors.white,
+      foregroundColor: AppColors.textPrimary,
       elevation: 0,
       centerTitle: false,
       titleTextStyle: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.3,
-        color: Colors.white,
+        color: AppColors.textPrimary,
       ),
-      iconTheme: IconThemeData(color: Colors.white),
-      actionsIconTheme: IconThemeData(color: Colors.white),
+      iconTheme: IconThemeData(color: AppColors.textPrimary),
+      actionsIconTheme: IconThemeData(color: AppColors.textPrimary),
     ),
 
-    // Clean, Flat Techno Cards with 1px Precision Border
+    // Precision Flat Cards with 1px Hairline Slate Border
     cardTheme: CardThemeData(
       color: AppColors.cardBackground,
       elevation: 0,
@@ -67,11 +79,11 @@ ThemeData buildTheme() {
       ),
     ),
 
-    // Sharp, Modern Action Buttons (no heavy skeuomorphic shadows)
+    // High-Contrast Cyber Mint Action Buttons
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.onPrimary,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -79,8 +91,8 @@ ThemeData buildTheme() {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         textStyle: const TextStyle(
           fontSize: 15,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.2,
         ),
       ),
     ),
@@ -88,7 +100,7 @@ ThemeData buildTheme() {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.primary,
-        side: const BorderSide(color: AppColors.primary, width: 1.2),
+        side: BorderSide(color: AppColors.primary.withValues(alpha: 0.6), width: 1.2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
@@ -100,10 +112,10 @@ ThemeData buildTheme() {
       ),
     ),
 
-    // Modern Form Inputs
+    // Modern Technical Inputs
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white,
+      fillColor: AppColors.surfaceContainer,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
@@ -125,14 +137,15 @@ ThemeData buildTheme() {
     ),
 
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: AppColors.headerBackground,
+      backgroundColor: const Color(0xFF1E2636),
       contentTextStyle: const TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
       ),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
+        side: const BorderSide(color: AppColors.border),
       ),
     ),
 
@@ -140,6 +153,14 @@ ThemeData buildTheme() {
       color: AppColors.border,
       thickness: 1,
       space: 1,
+    ),
+
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.cardBackground,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.border),
+      ),
     ),
   );
 }

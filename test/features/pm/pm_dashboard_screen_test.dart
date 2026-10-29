@@ -8,6 +8,7 @@ import 'package:site_pulse/data/models/app_user.dart';
 import 'package:site_pulse/data/models/attendance_entry.dart';
 import 'package:site_pulse/data/models/incident.dart';
 import 'package:site_pulse/data/models/material.dart' as sp;
+import 'package:site_pulse/data/models/worker.dart';
 import 'package:site_pulse/data/providers.dart';
 import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/pm/dashboard/pm_dashboard_screen.dart';
@@ -73,12 +74,20 @@ class _NeverEmittingMaterialRepository extends FakeMaterialRepository {
   }
 }
 
+class _NeverEmittingWorkerRepository extends FakeWorkerRepository {
+  @override
+  Stream<List<Worker>> watchWorkers(String siteId, {bool? activeOnly}) {
+    return const Stream<List<Worker>>.empty();
+  }
+}
+
 Widget buildDashboardApp({
   FakeAuthRepository? authRepo,
   FakeSiteRepository? siteRepo,
   FakeMaterialRepository? materialRepo,
   FakeIncidentRepository? incidentRepo,
   FakeAttendanceRepository? attendanceRepo,
+  FakeWorkerRepository? workerRepo,
 }) {
   const pmUser = AppUser(
     uid: 'pm-1',
@@ -93,6 +102,7 @@ Widget buildDashboardApp({
   final actualMaterial = materialRepo ?? FakeMaterialRepository();
   final actualIncident = incidentRepo ?? FakeIncidentRepository();
   final actualAttendance = attendanceRepo ?? FakeAttendanceRepository();
+  final actualWorker = workerRepo ?? FakeWorkerRepository();
 
   final router = GoRouter(
     initialLocation: '/pm/dashboard',
@@ -121,6 +131,7 @@ Widget buildDashboardApp({
       materialRepositoryProvider.overrideWithValue(actualMaterial),
       incidentRepositoryProvider.overrideWithValue(actualIncident),
       attendanceRepositoryProvider.overrideWithValue(actualAttendance),
+      workerRepositoryProvider.overrideWithValue(actualWorker),
     ],
     child: MaterialApp.router(routerConfig: router),
   );
@@ -336,6 +347,38 @@ void main() {
       expect(find.text('100%'), findsNothing);
       expect(find.byKey(const Key('metric_low_stock')), findsNothing);
       expect(find.byKey(const Key('metric_high_incidents')), findsNothing);
+    });
+
+    testWidgets('site crew count does not default to zero while loading', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildDashboardApp(workerRepo: _NeverEmittingWorkerRepository()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Loading crew…'), findsWidgets);
+      expect(find.text('0 crew active'), findsNothing);
+    });
+
+    testWidgets('empty attendance does not report a full attendance rate', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildDashboardApp(
+          attendanceRepo: FakeAttendanceRepository(initialAttendance: []),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('metric_crew_attendance')),
+          matching: find.text('—'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('100%'), findsNothing);
     });
   });
 }

@@ -429,8 +429,6 @@ class _MaterialsTab extends ConsumerWidget {
         }
 
         final materialMap = {for (final m in materials) m.id: m};
-        final logs = logsAsync.value ?? [];
-
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -554,46 +552,58 @@ class _MaterialsTab extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
 
-              if (logs.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                  child: Text('No material usage logged in this date range.'),
-                )
-              else
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: logs.length > 20 ? 20 : logs.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final log = logs[index];
-                    final mat = materialMap[log.materialId];
-                    final unit = mat?.unit ?? 'units';
-                    final name = mat?.name ?? log.materialId;
-
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Colors.orange.shade50,
-                        child: Icon(
-                          Icons.remove,
-                          color: Colors.orange.shade900,
-                          size: 18,
-                        ),
-                      ),
-                      title: Text(
-                        '−${log.qtyUsed.toStringAsFixed(1)} $unit  ($name)',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(
-                        'Remaining: ${log.remainingAfter.toStringAsFixed(1)} $unit  •  ${_formatDate(log.date)}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      trailing: SyncChip(pending: log.hasPendingWrites),
-                    );
-                  },
+              logsAsync.when(
+                loading: () =>
+                    const LoadingView(message: 'Loading material logs…'),
+                error: (error, _) => ErrorView(
+                  message: 'Failed to load material logs: $error',
+                  onRetry: () =>
+                      ref.invalidate(_siteDetailMaterialLogsProvider(query)),
                 ),
+                data: (logs) => logs.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        child: Text(
+                          'No material usage logged in this date range.',
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: logs.length > 20 ? 20 : logs.length,
+                        separatorBuilder: (_, _) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final log = logs[index];
+                          final mat = materialMap[log.materialId];
+                          final unit = mat?.unit ?? 'units';
+                          final name = mat?.name ?? log.materialId;
+
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: Colors.orange.shade50,
+                              child: Icon(
+                                Icons.remove,
+                                color: Colors.orange.shade900,
+                                size: 18,
+                              ),
+                            ),
+                            title: Text(
+                              '−${log.qtyUsed.toStringAsFixed(1)} $unit  ($name)',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text(
+                              'Remaining: ${log.remainingAfter.toStringAsFixed(1)} $unit  •  ${_formatDate(log.date)}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            trailing: SyncChip(pending: log.hasPendingWrites),
+                          );
+                        },
+                      ),
+              ),
             ],
           ),
         );

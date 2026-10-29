@@ -226,7 +226,7 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
 
           // ── Metrics Calculations ─────────────────────────────────
           // 1. Crew Attendance %
-          String attendancePercentText = '100%';
+          var attendancePercentText = '—';
           if (attendance.isNotEmpty) {
             final present = attendance
                 .where((a) => a.status == AttendanceStatus.present)
@@ -619,7 +619,11 @@ class _SiteDashboardCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final workersAsync = ref.watch(_siteWorkersProvider(site.id));
-    final crewCount = workersAsync.value?.where((w) => w.active).length ?? 0;
+    final crewStatus = workersAsync.when(
+      data: (workers) => '${workers.where((w) => w.active).length} crew active',
+      loading: () => 'Loading crew…',
+      error: (_, _) => 'Crew unavailable',
+    );
 
     return Card(
       elevation: 1.5,
@@ -706,7 +710,7 @@ class _SiteDashboardCard extends ConsumerWidget {
                   // Crew Count Badge
                   _StatusChip(
                     icon: Icons.groups,
-                    label: '$crewCount crew active',
+                    label: crewStatus,
                     color: const Color(0xFF1976D2),
                   ),
 

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 
-/// Modern Dark Ambient Background for Site Pulse dashboards and pages.
-/// Creates high contrast for white cards and buttons so they look intensely enhanced.
+/// Modern Balanced Graphite Ambient Background for Site Pulse dashboards.
+/// Slightly lighter charcoal slate canvas that provides high contrast for white cards
+/// without being pitch-black.
 class AppPageBackground extends StatelessWidget {
   final Widget child;
 
@@ -12,14 +13,14 @@ class AppPageBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF09090B),
+        color: Color(0xFF1B1B24), // Balanced graphite slate canvas
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF130E20), // Deep violet-slate ambient top
-            Color(0xFF0C0A12), // Deep obsidian body
-            Color(0xFF09090B), // Zinc-950 base
+            Color(0xFF262235), // Soft violet-slate top ambient
+            Color(0xFF1E1E28), // Balanced charcoal graphite body
+            Color(0xFF171720), // Subtle grounding base
           ],
           stops: [0.0, 0.45, 1.0],
         ),
@@ -41,7 +42,7 @@ class AppPageBackground extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            AppColors.primary.withValues(alpha: 0.22),
+                            AppColors.primary.withValues(alpha: 0.18),
                             Colors.transparent,
                           ],
                         ),
@@ -58,7 +59,7 @@ class AppPageBackground extends StatelessWidget {
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            const Color(0xFF6366F1).withValues(alpha: 0.16),
+                            const Color(0xFF6366F1).withValues(alpha: 0.14),
                             Colors.transparent,
                           ],
                         ),

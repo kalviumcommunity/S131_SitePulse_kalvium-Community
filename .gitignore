@@ -2,6 +2,8 @@
 *.class
 *.lock
 *.log
+firestore-debug.log
+ui-debug.log
 *.pyc
 *.swp
 .buildlog/
@@ -121,6 +123,7 @@ app.*.symbols
 # Firebase service account secrets
 service-account.json
 *-service-account*.json
+service-account*.json
 
 # Environment variables and secrets
 .env
@@ -129,3 +132,7 @@ service-account.json
 
 # Node
 node_modules/
+.firebase/
+.idea/
+*.iml
+*.keystore

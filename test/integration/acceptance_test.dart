@@ -245,6 +245,9 @@ void main() {
       expect(find.byKey(const Key('tab_attendance')), findsOneWidget);
       expect(find.byKey(const Key('tab_materials')), findsOneWidget);
       expect(find.byKey(const Key('tab_incidents')), findsOneWidget);
+      expect(find.byType(TabBar), findsNothing);
+      expect(find.text('Home'), findsNothing);
+      expect(find.text('Profile'), findsNothing);
 
       // Switch to Materials tab
       await tester.tap(find.byKey(const Key('tab_materials')));
@@ -269,6 +272,9 @@ void main() {
       await tester.tap(find.byKey(const Key('logout_button')));
       await tester.pumpAndSettle();
 
+      expect(find.byKey(const Key('logout_confirmation_dialog')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('confirm_logout_button')));
+      await tester.pumpAndSettle();
       expect(find.byKey(const Key('email_field')), findsOneWidget);
       expect(find.byKey(const Key('sign_in_button')), findsOneWidget);
     });

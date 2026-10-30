@@ -73,15 +73,20 @@ Widget buildSiteDetailApp({
 
 void main() {
   group('PmSiteDetailScreen Widget Tests', () {
-    testWidgets('renders site name in AppBar and 3 tabs', (tester) async {
+    testWidgets('site detail has title, back button and 3 bottom tabs', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSiteDetailApp());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Downtown Heights'), findsOneWidget);
+      expect(find.byKey(const Key('pm_site_back')), findsOneWidget);
       expect(find.byKey(const Key('tab_attendance')), findsOneWidget);
       expect(find.byKey(const Key('tab_materials')), findsOneWidget);
       expect(find.byKey(const Key('tab_incidents')), findsOneWidget);
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byType(TabBar), findsNothing);
     });
 
     testWidgets('attendance tab displays day card and expands worker details', (
@@ -173,7 +178,8 @@ void main() {
       );
       addTearDown(repository.dispose);
       await tester.pumpWidget(buildSiteDetailApp(materialRepo: repository));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byKey(const Key('tab_materials')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));

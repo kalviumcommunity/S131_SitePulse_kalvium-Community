@@ -310,5 +310,91 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Sign in'), findsOneWidget);
     });
+
+    testWidgets('PM footer has Home and Profile tabs with profile details', (
+      tester,
+    ) async {
+      const pm = AppUser(
+        uid: 'user-pm-1',
+        role: UserRole.pm,
+        name: 'Priya Sharma',
+        siteId: null,
+        email: 'pm@sitepulse.test',
+      );
+      final fakeAuth = FakeAuthRepository(initialUsers: [pm], initialUser: pm);
+
+      await tester.pumpWidget(
+        createRouterTestApp(
+          fakeAuthRepo: fakeAuth,
+          initialLocation: '/pm/dashboard',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Profile'), findsOneWidget);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(NavigationBar),
+          matching: find.byIcon(Icons.person),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Profile'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Priya Sharma'), findsOneWidget);
+      expect(find.text('pm'), findsOneWidget);
+      expect(find.text('pm@sitepulse.test'), findsOneWidget);
+      expect(find.text('user-pm-1'), findsOneWidget);
+      expect(find.text('Monitored sites'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('pm_profile_logout_button')),
+        200,
+      );
+      await tester.tap(find.byKey(const Key('pm_profile_logout_button')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('logout_confirmation_dialog')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('confirm_logout_button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Sign in'), findsOneWidget);
+    });
+
+    testWidgets('PM site detail hides main footer and uses bottom tabs', (
+      tester,
+    ) async {
+      const pm = AppUser(
+        uid: 'user-pm-1',
+        role: UserRole.pm,
+        name: 'Priya Sharma',
+        siteId: null,
+      );
+      final fakeAuth = FakeAuthRepository(initialUsers: [pm], initialUser: pm);
+
+      await tester.pumpWidget(
+        createRouterTestApp(
+          fakeAuthRepo: fakeAuth,
+          initialLocation: '/pm/dashboard',
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('site_card_site-1')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byKey(const Key('pm_site_back')), findsOneWidget);
+      expect(find.byType(TabBar), findsNothing);
+      expect(find.text('Attendance'), findsOneWidget);
+      expect(find.text('Materials'), findsOneWidget);
+      expect(find.text('Incidents'), findsOneWidget);
+      expect(find.text('Home'), findsNothing);
+      expect(find.text('Profile'), findsNothing);
+    });
   });
 }

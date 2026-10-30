@@ -101,21 +101,14 @@ class PmSiteDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+{
+  int _selectedTabIndex = 0;
   late DateTimeRange _dateRange;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _dateRange = lastSevenDays();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   String _formatRangeLabel(DateTimeRange r) {
@@ -171,6 +164,16 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          key: const Key('pm_site_back'),
+          tooltip: 'Back',
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
         title: siteAsync.when(
           loading: () => const Text('Site Detail…'),
           error: (_, _) => Text('Site: ${widget.siteId}'),
@@ -184,53 +187,56 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
             onPressed: _pickDateRange,
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(49),
-          child: Column(
-            children: [
-              TabBar(
-                controller: _tabController,
-                tabs: const [
-                  Tab(
-                    key: Key('tab_attendance'),
-                    icon: Icon(Icons.how_to_reg),
-                    text: 'Attendance',
+      ),
+      body: AppPageBackground(
+        child: Column(
+          children: [
+            const OfflineBanner(),
+            Expanded(
+              child: IndexedStack(
+                index: _selectedTabIndex,
+                children: [
+                  _AttendanceTab(
+                    key: const Key('tab_attendance_view'),
+                    siteId: widget.siteId,
+                    query: query,
                   ),
-                  Tab(
-                    key: Key('tab_materials'),
-                    icon: Icon(Icons.inventory_2),
-                    text: 'Materials',
+                  _MaterialsTab(
+                    key: const Key('tab_materials_view'),
+                    query: query,
                   ),
-                  Tab(
-                    key: Key('tab_incidents'),
-                    icon: Icon(Icons.warning_amber),
-                    text: 'Incidents',
+                  _IncidentsTab(
+                    key: const Key('tab_incidents_view'),
+                    query: query,
                   ),
                 ],
               ),
-              const OfflineBanner(),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-      body: AppPageBackground(
-        child: TabBarView(
-        controller: _tabController,
-        children: [
-          // ── Tab 1: Attendance History ─────────────────────────────
-          _AttendanceTab(
-            key: const Key('tab_attendance_view'),
-            siteId: widget.siteId,
-            query: query,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedTabIndex,
+        onDestinationSelected: (index) {
+          setState(() => _selectedTabIndex = index);
+        },
+        destinations: const [
+          NavigationDestination(
+            key: Key('tab_attendance'),
+            icon: Icon(Icons.how_to_reg),
+            label: 'Attendance',
           ),
-
-          // ── Tab 2: Materials Stock & Logs ────────────────────────
-          _MaterialsTab(key: const Key('tab_materials_view'), query: query),
-
-          // ── Tab 3: Incidents History ─────────────────────────────
-          _IncidentsTab(key: const Key('tab_incidents_view'), query: query),
+          NavigationDestination(
+            key: Key('tab_materials'),
+            icon: Icon(Icons.inventory_2),
+            label: 'Materials',
+          ),
+          NavigationDestination(
+            key: Key('tab_incidents'),
+            icon: Icon(Icons.warning_amber),
+            label: 'Incidents',
+          ),
         ],
-      ),
       ),
     );
   }

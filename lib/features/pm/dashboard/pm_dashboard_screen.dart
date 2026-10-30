@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/core/utils/date_ranges.dart';
+import 'package:site_pulse/core/utils/logout_confirmation.dart';
 import 'package:site_pulse/core/widgets/app_page_background.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
@@ -179,7 +180,10 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
             key: const Key('logout_button'),
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
-            onPressed: () => ref.read(authControllerProvider).signOut(),
+            onPressed: () => showLogoutConfirmation(
+              context,
+              () => ref.read(authControllerProvider).signOut(),
+            ),
           ),
         ],
         bottom: PreferredSize(
@@ -322,8 +326,10 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                             key: const Key('logout_button_large'),
                             icon: const Icon(Icons.logout, size: 16),
                             label: const Text('Logout'),
-                            onPressed: () =>
-                                ref.read(authControllerProvider).signOut(),
+                            onPressed: () => showLogoutConfirmation(
+                              context,
+                              () => ref.read(authControllerProvider).signOut(),
+                            ),
                           ),
                         ],
                       ),

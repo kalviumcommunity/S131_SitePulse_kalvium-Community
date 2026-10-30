@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:site_pulse/core/theme/app_theme.dart';
+import 'package:site_pulse/core/widgets/app_page_background.dart';
 import 'package:site_pulse/core/widgets/attendance_toggle.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
@@ -233,7 +235,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           child: OfflineBanner(),
         ),
       ),
-      body: workersAsync.when(
+      body: AppPageBackground(
+        child: workersAsync.when(
         loading: () => const LoadingView(message: 'Loading workers…'),
         error: (e, _) => ErrorView(
           message: 'Failed to load workers: $e',
@@ -258,6 +261,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             data: (existing) => _buildBody(context, siteId, workers, existing),
           );
         },
+      ),
       ),
     );
   }
@@ -344,9 +348,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               const Spacer(),
               Text(
                 '${workers.length} workers',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.outline,
-                ),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -454,7 +457,8 @@ class _WorkerAttendanceTile extends StatelessWidget {
                     Text(
                       '${worker.workerCode}  •  ${worker.trade}',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.outline,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],

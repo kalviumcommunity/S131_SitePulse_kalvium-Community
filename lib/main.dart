@@ -9,14 +9,18 @@ import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true,
-    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-  );
-  if (kDebugMode && const bool.fromEnvironment('USE_EMULATOR')) {
-    FirebaseFirestore.instance.useFirestoreEmulator('10.0.2.2', 8080);
-    FirebaseAuth.instance.useAuthEmulator('10.0.2.2', 9099);
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
+    if (kDebugMode && const bool.fromEnvironment('USE_EMULATOR')) {
+      FirebaseFirestore.instance.useFirestoreEmulator('10.0.2.2', 8080);
+      FirebaseAuth.instance.useAuthEmulator('10.0.2.2', 9099);
+    }
+  } catch (e) {
+    debugPrint('Firebase init: $e');
   }
   runApp(
     ProviderScope(

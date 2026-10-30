@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/core/utils/date_ranges.dart';
+import 'package:site_pulse/core/widgets/app_page_background.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
 import 'package:site_pulse/core/widgets/sync_chip.dart';
@@ -212,7 +213,8 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
           ),
         ),
       ),
-      body: TabBarView(
+      body: AppPageBackground(
+        child: TabBarView(
         controller: _tabController,
         children: [
           // ── Tab 1: Attendance History ─────────────────────────────
@@ -228,6 +230,7 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
           // ── Tab 3: Incidents History ─────────────────────────────
           _IncidentsTab(key: const Key('tab_incidents_view'), query: query),
         ],
+      ),
       ),
     );
   }
@@ -322,9 +325,10 @@ class _AttendanceTab extends ConsumerWidget {
                 ),
                 subtitle: Text(
                   'Present: $present  •  Half: $half  •  Absent: $absent',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: Theme.of(context).colorScheme.outline,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 children: dayRecords.map((r) {
@@ -754,7 +758,7 @@ class _IncidentsTab extends ConsumerWidget {
                           _formatDate(inc.occurredAt),
                           style: TextStyle(
                             fontSize: 11,
-                            color: Theme.of(context).colorScheme.outline,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                         const SizedBox(width: 8),

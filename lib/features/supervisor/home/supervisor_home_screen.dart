@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/core/utils/date_ranges.dart';
+import 'package:site_pulse/core/widgets/app_page_background.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
 import 'package:site_pulse/core/widgets/sync_chip.dart';
@@ -275,7 +276,8 @@ class SupervisorHomeScreen extends ConsumerWidget {
           child: OfflineBanner(),
         ),
       ),
-      body: RefreshIndicator(
+      body: AppPageBackground(
+        child: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(_supervisorSiteProvider(siteId));
           ref.invalidate(_siteAttendanceProvider(siteId));
@@ -329,21 +331,17 @@ class SupervisorHomeScreen extends ConsumerWidget {
                                   const SizedBox(height: 2),
                                   Text(
                                     'Name: ${user?.name ?? 'Unknown'}',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 12,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .outline,
+                                      color: AppColors.textSecondary,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                   Text(
                                     'Role: ${user?.role.name ?? 'Unknown'}',
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 12,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .outline,
+                                      color: AppColors.textSecondary,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -407,8 +405,10 @@ class SupervisorHomeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
                   'Daily Actions',
-                  style: Theme.of(context).textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -420,7 +420,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
                     _ActionCard(
                       key: const Key('action_attendance'),
                       icon: Icons.how_to_reg,
-                      iconColor: const Color(0xFF1976D2),
+                      iconColor: AppColors.primary,
                       title: 'Mark Attendance',
                       subtitle: 'Record daily presence for site crew',
                       onTap: () => context.push('/supervisor/attendance'),
@@ -429,7 +429,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
                     _ActionCard(
                       key: const Key('action_material'),
                       icon: Icons.inventory_2,
-                      iconColor: const Color(0xFFE65100),
+                      iconColor: Color(0xFFB45309),
                       title: 'Log Material Usage',
                       subtitle: 'Record material consumption and track stock',
                       onTap: () => context.push('/supervisor/material'),
@@ -473,15 +473,17 @@ class SupervisorHomeScreen extends ConsumerWidget {
                   children: [
                     Text(
                       'Recent Activity Feed',
-                      style: Theme.of(context).textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                     ),
                     const Spacer(),
                     Text(
                       'Latest 10 items',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
-                        color: Theme.of(context).colorScheme.outline,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -533,6 +535,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -593,9 +596,10 @@ class _ActionCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
-                        color: Theme.of(context).colorScheme.outline,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -683,7 +687,7 @@ class _ActivityTile extends StatelessWidget {
                         formatTime(item.timestamp),
                         style: TextStyle(
                           fontSize: 11,
-                          color: Theme.of(context).colorScheme.outline,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(width: 6),

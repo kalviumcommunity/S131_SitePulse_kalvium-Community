@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/core/utils/date_ranges.dart';
+import 'package:site_pulse/core/widgets/app_page_background.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
 import 'package:site_pulse/data/models/attendance_entry.dart';
@@ -186,7 +187,8 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
           child: OfflineBanner(),
         ),
       ),
-      body: sitesAsync.when(
+      body: AppPageBackground(
+        child: sitesAsync.when(
         loading: () => const LoadingView(message: 'Loading sites…'),
         error: (e, _) => ErrorView(
           message: 'Failed to load sites: $e',
@@ -298,20 +300,18 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                                 const SizedBox(height: 2),
                                 Text(
                                   'Name: ${user?.name ?? 'Unknown'}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 12,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .outline,
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 Text(
                                   'Role: ${user?.role.name ?? 'pm'}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 12,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .outline,
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
@@ -341,8 +341,8 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.border),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String?>(
@@ -381,8 +381,8 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.border),
                           ),
                           child: Row(
                             children: [
@@ -462,15 +462,18 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                     children: [
                       Text(
                         'Monitored Sites (${displayedSites.length})',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
                       ),
                       const Spacer(),
                       Text(
                         'Tap site to inspect',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
-                          color: Theme.of(context).colorScheme.outline,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -524,6 +527,7 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
             ),
           );
         },
+      ),
       ),
     );
   }
@@ -583,7 +587,11 @@ class _MetricCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

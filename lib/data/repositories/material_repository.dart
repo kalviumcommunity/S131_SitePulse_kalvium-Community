@@ -17,9 +17,6 @@ abstract class MaterialRepository {
     DateTime? endDate,
   });
 
-  /// Fire-and-forget write: returns material id immediately
-  String saveMaterial(Material material);
-
   /// One operation that logs usage and decrements currentStock.
   /// Fire-and-forget: returns log id immediately and reports failures to errorStream.
   String logUsage({

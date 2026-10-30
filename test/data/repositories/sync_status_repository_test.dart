@@ -5,9 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:site_pulse/data/models/write_failure.dart';
 import 'package:site_pulse/data/providers.dart';
+import 'package:site_pulse/data/repositories/firestore_sync_status_repository.dart';
+import 'package:site_pulse/data/repositories/repository_error.dart';
+import 'package:site_pulse/data/repositories/write_failure_sink.dart';
+
 import '../../support/fakes/fakes.dart';
 import '../../support/test_overrides.dart';
-import 'package:site_pulse/data/repositories/repositories.dart';
 
 class _MockFirebaseFirestore extends Mock implements FirebaseFirestore {}
 
@@ -162,9 +165,7 @@ void main() {
     final failures = await container
         .read(syncStatusRepositoryProvider)
         .writeFailures
-        .firstWhere(
-      (items) => items.isNotEmpty,
-    );
+        .firstWhere((items) => items.isNotEmpty);
     final failure = failures.single;
     expect(failure.collection, 'materialLogs');
     expect(failure.documentId, isNotEmpty);

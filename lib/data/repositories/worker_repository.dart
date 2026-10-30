@@ -6,10 +6,7 @@ abstract class WorkerRepository {
   Stream<List<Worker>> watchWorkers(String siteId, {bool? activeOnly});
 
   /// Reads all workers across all sites (PM overview)
-  Stream<List<Worker>> watchAllWorkers({bool? activeOnly});
-
-  /// Reads a single worker
-  Stream<Worker?> watchWorker(String siteId, String workerId);
+  Stream<List<Worker>> watchAllWorkers();
 
   /// Fire-and-forget write: returns worker ID immediately
   String saveWorker(String siteId, Worker worker);

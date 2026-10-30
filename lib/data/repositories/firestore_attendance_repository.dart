@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:site_pulse/data/models/attendance_entry.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:site_pulse/data/repositories/attendance_repository.dart';
-import 'package:site_pulse/data/repositories/firestore/firestore_multi_site_repository.dart';
+import 'package:site_pulse/data/repositories/firestore_site_repository.dart';
 
 /// Real Firestore-backed [AttendanceRepository].
 ///

@@ -1,27 +1,29 @@
 import 'dart:async';
+
 import 'package:site_pulse/data/models/incident.dart';
 import 'package:site_pulse/data/repositories/incident_repository.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
 
 class FakeIncidentRepository implements IncidentRepository {
   static List<Incident> get defaultIncidents => [
-        // One high severity incident
-        Incident(
-          id: 'inc-1',
-          severity: Severity.high,
-          description: 'Scaffolding joint failure on Level 4; area cordoned off',
-          occurredAt: DateTime.now().subtract(const Duration(days: 1)),
-          siteId: 'site-1',
-        ),
-        // One minor severity incident
-        Incident(
-          id: 'inc-2',
-          severity: Severity.minor,
-          description: 'Minor hand abrasion during rebar unloading; treated with first aid',
-          occurredAt: DateTime.now().subtract(const Duration(hours: 3)),
-          siteId: 'site-2',
-        ),
-      ];
+    // One high severity incident
+    Incident(
+      id: 'inc-1',
+      severity: Severity.high,
+      description: 'Scaffolding joint failure on Level 4; area cordoned off',
+      occurredAt: DateTime.now().subtract(const Duration(days: 1)),
+      siteId: 'site-1',
+    ),
+    // One minor severity incident
+    Incident(
+      id: 'inc-2',
+      severity: Severity.minor,
+      description:
+          'Minor hand abrasion during rebar unloading; treated with first aid',
+      occurredAt: DateTime.now().subtract(const Duration(hours: 3)),
+      siteId: 'site-2',
+    ),
+  ];
 
   final Map<String, Incident> _incidents = {};
   final StreamController<void> _changeController =
@@ -43,9 +45,19 @@ class FakeIncidentRepository implements IncidentRepository {
     DateTime? endDate,
     Severity? severity,
   }) async* {
-    yield _filter(siteId: siteId, startDate: startDate, endDate: endDate, severity: severity);
+    yield _filter(
+      siteId: siteId,
+      startDate: startDate,
+      endDate: endDate,
+      severity: severity,
+    );
     yield* _changeController.stream.map(
-      (_) => _filter(siteId: siteId, startDate: startDate, endDate: endDate, severity: severity),
+      (_) => _filter(
+        siteId: siteId,
+        startDate: startDate,
+        endDate: endDate,
+        severity: severity,
+      ),
     );
   }
 
@@ -62,12 +74,6 @@ class FakeIncidentRepository implements IncidentRepository {
       if (endDate != null && inc.occurredAt.isAfter(endDate)) return false;
       return true;
     }).toList();
-  }
-
-  @override
-  Stream<Incident?> watchIncident(String id) async* {
-    yield _incidents[id];
-    yield* _changeController.stream.map((_) => _incidents[id]);
   }
 
   @override

@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:site_pulse/data/models/material.dart';
 import 'package:site_pulse/data/models/material_log.dart';
-import 'package:site_pulse/data/repositories/firestore/firestore_multi_site_repository.dart';
+import 'package:site_pulse/data/repositories/firestore_site_repository.dart';
 import 'package:site_pulse/data/repositories/material_repository.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:uuid/uuid.dart';
@@ -160,18 +160,6 @@ class FirestoreMaterialRepository implements MaterialRepository {
             );
           }).toList(),
         );
-  }
-
-  @override
-  String saveMaterial(Material material) {
-    _errorController.add(
-      RepositoryError(
-        operation: 'saveMaterial',
-        message: 'Materials are managed outside the client application',
-        documentId: material.id,
-      ),
-    );
-    return material.id;
   }
 
   @override

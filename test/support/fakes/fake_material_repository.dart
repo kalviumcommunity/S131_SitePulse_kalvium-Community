@@ -124,22 +124,6 @@ class FakeMaterialRepository implements MaterialRepository {
   }
 
   @override
-  String saveMaterial(Material material) {
-    if (material.id.isEmpty) {
-      _errorController.add(
-        const RepositoryError(
-          operation: 'saveMaterial',
-          message: 'Material id cannot be empty',
-        ),
-      );
-      return '';
-    }
-    _materials[_materialKey(material.siteId, material.id)] = material;
-    _materialChangeController.add(null);
-    return material.id;
-  }
-
-  @override
   String logUsage({
     required String materialId,
     required double qtyUsed,

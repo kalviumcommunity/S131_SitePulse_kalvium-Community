@@ -11,9 +11,6 @@ abstract class IncidentRepository {
     Severity? severity,
   });
 
-  /// Watch a single incident
-  Stream<Incident?> watchIncident(String id);
-
   /// Fire-and-forget write: returns incident ID immediately
   String reportIncident(Incident incident);
 

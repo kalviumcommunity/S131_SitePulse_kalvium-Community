@@ -4,7 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
 import 'package:site_pulse/data/models/models.dart';
 import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/repositories.dart';
+import 'package:site_pulse/data/repositories/attendance_repository.dart';
+import 'package:site_pulse/data/repositories/auth_repository.dart';
+import 'package:site_pulse/data/repositories/incident_repository.dart';
+import 'package:site_pulse/data/repositories/material_repository.dart';
+import 'package:site_pulse/data/repositories/repository_error.dart';
+import 'package:site_pulse/data/repositories/site_repository.dart';
+import 'package:site_pulse/data/repositories/worker_repository.dart';
+
 import '../../support/fakes/fakes.dart';
 import '../../support/test_overrides.dart';
 

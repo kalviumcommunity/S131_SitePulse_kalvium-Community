@@ -13,8 +13,13 @@ import 'package:site_pulse/data/repositories/incident_repository.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:site_pulse/data/repositories/sync_status_repository.dart';
 import 'package:site_pulse/data/repositories/write_failure_sink.dart';
-import 'package:site_pulse/data/repositories/firestore/firestore_auth_repository.dart';
-import 'package:site_pulse/data/repositories/firestore/firestore.dart';
+import 'package:site_pulse/data/repositories/firestore_auth_repository.dart';
+import 'package:site_pulse/data/repositories/firestore_site_repository.dart';
+import 'package:site_pulse/data/repositories/firestore_worker_repository.dart';
+import 'package:site_pulse/data/repositories/firestore_attendance_repository.dart';
+import 'package:site_pulse/data/repositories/firestore_material_repository.dart';
+import 'package:site_pulse/data/repositories/firestore_incident_repository.dart';
+import 'package:site_pulse/data/repositories/firestore_sync_status_repository.dart';
 
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
   return FirebaseAuth.instance;
@@ -70,8 +75,6 @@ final materialRepositoryProvider = Provider<MaterialRepository>((ref) {
     errorStream: repository.errorStream,
     collection: 'materialLogs',
     onDispose: ref.onDispose,
-    collectionForError: (error) =>
-        error.operation == 'saveMaterial' ? 'materials' : 'materialLogs',
   );
   ref.onDispose(repository.dispose);
   return repository;

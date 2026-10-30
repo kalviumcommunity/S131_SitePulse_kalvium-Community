@@ -1,0 +1,28 @@
+import 'package:flutter/material.dart';
+
+// Shared ranges keep supervisor and PM date windows consistent.
+DateTimeRange lastSevenDays({DateTime? now}) {
+  final today = now ?? DateTime.now();
+  final end = DateTime(today.year, today.month, today.day, 23, 59, 59);
+  return DateTimeRange(
+    start: DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(const Duration(days: 6)),
+    end: end,
+  );
+}
+
+DateTimeRange lastThirtyDays({DateTime? now}) {
+  final today = now ?? DateTime.now();
+  final end = DateTime(today.year, today.month, today.day, 23, 59, 59);
+  return DateTimeRange(
+    start: DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(const Duration(days: 29)),
+    end: end,
+  );
+}

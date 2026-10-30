@@ -2,6 +2,8 @@
 *.class
 *.lock
 *.log
+firestore-debug.log
+ui-debug.log
 *.pyc
 *.swp
 .buildlog/
@@ -117,3 +119,20 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+
+# Firebase service account secrets
+service-account.json
+*-service-account*.json
+service-account*.json
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+.firebase/
+.idea/
+*.iml
+*.keystore

@@ -1,20 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
 import 'core/theme/app_theme.dart';
+import 'core/widgets/sync_failure_banner.dart';
+import 'data/providers.dart';
 import 'router.dart';
 
-class SitePulseApp extends StatelessWidget {
-  SitePulseApp({super.key, required this.firebaseReady})
-      : _router = buildRouter(firebaseReady: firebaseReady);
+class SitePulseApp extends ConsumerStatefulWidget {
+  const SitePulseApp({super.key, required this.firebaseReady});
 
   final bool firebaseReady;
-  final dynamic _router;
+
+  @override
+  ConsumerState<SitePulseApp> createState() => _SitePulseAppState();
+}
+
+class SitePulseScrollBehavior extends MaterialScrollBehavior {
+  const SitePulseScrollBehavior();
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) => child;
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const ClampingScrollPhysics();
+}
+
+class _SitePulseAppState extends ConsumerState<SitePulseApp> {
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    final authRepository = ref.read(authRepositoryProvider);
+    _router = buildRouter(
+      firebaseReady: widget.firebaseReady,
+      authRepository: authRepository,
+    );
+  }
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Site Pulse',
       theme: buildTheme(),
+      scrollBehavior: const SitePulseScrollBehavior(),
       routerConfig: _router,
+      builder: (context, child) =>
+          SyncFailureBanner(child: child ?? const SizedBox.shrink()),
     );
   }
 }

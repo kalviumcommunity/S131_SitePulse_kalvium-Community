@@ -17,6 +17,7 @@ class AppUser {
   final UserRole role;
   final String name;
   final String? siteId;
+  final String? email;
   final bool hasPendingWrites;
 
   const AppUser({
@@ -24,6 +25,7 @@ class AppUser {
     required this.role,
     required this.name,
     this.siteId,
+    this.email,
     this.hasPendingWrites = false,
   });
 
@@ -32,6 +34,7 @@ class AppUser {
     UserRole? role,
     String? name,
     String? siteId,
+    String? email,
     bool? hasPendingWrites,
   }) {
     return AppUser(
@@ -39,6 +42,7 @@ class AppUser {
       role: role ?? this.role,
       name: name ?? this.name,
       siteId: siteId ?? this.siteId,
+      email: email ?? this.email,
       hasPendingWrites: hasPendingWrites ?? this.hasPendingWrites,
     );
   }
@@ -78,12 +82,14 @@ class AppUser {
           role == other.role &&
           name == other.name &&
           siteId == other.siteId &&
+          email == other.email &&
           hasPendingWrites == other.hasPendingWrites;
 
   @override
-  int get hashCode => Object.hash(uid, role, name, siteId, hasPendingWrites);
+  int get hashCode =>
+      Object.hash(uid, role, name, siteId, email, hasPendingWrites);
 
   @override
   String toString() =>
-      'AppUser(uid: $uid, role: ${role.name}, name: $name, siteId: $siteId, hasPendingWrites: $hasPendingWrites)';
+      'AppUser(uid: $uid, role: ${role.name}, name: $name, siteId: $siteId, email: $email, hasPendingWrites: $hasPendingWrites)';
 }

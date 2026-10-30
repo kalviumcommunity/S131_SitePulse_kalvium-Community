@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/core/utils/date_ranges.dart';
+import 'package:site_pulse/core/utils/logout_confirmation.dart';
 import 'package:site_pulse/core/widgets/app_page_background.dart';
 import 'package:site_pulse/core/widgets/offline_banner.dart';
 import 'package:site_pulse/core/widgets/status_views.dart';
@@ -243,7 +244,10 @@ class SupervisorHomeScreen extends ConsumerWidget {
               key: const Key('logout_button'),
               icon: const Icon(Icons.logout),
               tooltip: 'Logout',
-              onPressed: () => ref.read(authControllerProvider).signOut(),
+              onPressed: () => showLogoutConfirmation(
+                context,
+                () => ref.read(authControllerProvider).signOut(),
+              ),
             ),
           ],
           bottom: PreferredSize(
@@ -268,7 +272,10 @@ class SupervisorHomeScreen extends ConsumerWidget {
             key: const Key('logout_button'),
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
-            onPressed: () => ref.read(authControllerProvider).signOut(),
+            onPressed: () => showLogoutConfirmation(
+              context,
+              () => ref.read(authControllerProvider).signOut(),
+            ),
           ),
         ],
         bottom: PreferredSize(
@@ -294,108 +301,82 @@ class SupervisorHomeScreen extends ConsumerWidget {
               // ── Supervisor Header & Site Info Card ───────────────────
               Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 24,
-                              backgroundColor: AppColors.primary.withValues(
-                                alpha: 0.12,
+                child: InkWell(
+                  key: const Key('supervisor_profile_card'),
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => context.go('/supervisor/profile'),
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 24,
+                                backgroundColor: AppColors.primary.withValues(
+                                  alpha: 0.12,
+                                ),
+                                child: const Icon(
+                                  Icons.person,
+                                  color: AppColors.primary,
+                                  size: 28,
+                                ),
                               ),
-                              child: const Icon(
-                                Icons.person,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  user?.name ?? 'Supervisor',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 24),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 20,
                                 color: AppColors.primary,
-                                size: 28,
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    user?.name ?? 'Supervisor',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.bold),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: siteAsync.when(
+                                  loading: () => const Text(
+                                    'Loading site…',
+                                    style: TextStyle(fontWeight: FontWeight.w600),
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Name: ${user?.name ?? 'Unknown'}',
+                                  error: (_, _) => Text(
+                                    'Site: $siteId',
                                     style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                      fontWeight: FontWeight.w500,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  Text(
-                                    'Role: ${user?.role.name ?? 'Unknown'}',
+                                  data: (site) => Text(
+                                    site != null
+                                        ? site.name
+                                        : 'Site: $siteId',
+                                    key: const Key('site_name_header'),
                                     style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                      fontWeight: FontWeight.w500,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                            OutlinedButton.icon(
-                              key: const Key('logout_button_large'),
-                              icon: const Icon(Icons.logout, size: 16),
-                              label: const Text('Logout'),
-                              onPressed: () =>
-                                  ref.read(authControllerProvider).signOut(),
-                            ),
-                          ],
-                        ),
-                        const Divider(height: 24),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 20,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: siteAsync.when(
-                                loading: () => const Text(
-                                  'Loading site…',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                                error: (_, _) => Text(
-                                  'Site: $siteId',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                data: (site) => Text(
-                                  site != null
-                                      ? site.name
-                                      : (siteId.isNotEmpty
-                                            ? 'Site: $siteId'
-                                            : 'No Site Assigned'),
-                                  key: const Key('site_name_header'),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -443,22 +424,6 @@ class SupervisorHomeScreen extends ConsumerWidget {
                       title: 'Report Incident',
                       subtitle: 'Log hazards, safety events, and escalations',
                       onTap: () => context.push('/supervisor/incident'),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: OutlinedButton.icon(
-                        key: const Key('action_roster'),
-                        icon: const Icon(Icons.people_outline),
-                        label: const Text('Manage Site Worker Roster'),
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () => context.push('/supervisor/roster'),
-                      ),
                     ),
                   ],
                 ),

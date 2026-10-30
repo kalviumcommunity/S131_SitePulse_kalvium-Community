@@ -91,6 +91,11 @@ Widget buildScreen({
         builder: (context, state) => const Scaffold(body: Text('Roster Route')),
       ),
       GoRoute(
+        path: '/supervisor/profile',
+        builder: (context, state) =>
+            const Scaffold(body: Text('Profile Route')),
+      ),
+      GoRoute(
         path: '/login',
         builder: (context, state) => const Scaffold(body: Text('Login Route')),
       ),
@@ -122,12 +127,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Sarah Connor'), findsOneWidget);
-      expect(find.text('Role: supervisor'), findsOneWidget);
+      expect(find.text('Name: Sarah Connor'), findsNothing);
+      expect(find.text('Role: supervisor'), findsNothing);
       expect(find.byKey(const Key('site_name_header')), findsOneWidget);
       expect(find.text('Downtown Heights'), findsOneWidget);
     });
 
-    testWidgets('renders all 4 action cards/buttons', (tester) async {
+    testWidgets('renders the three home action cards', (tester) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -135,7 +141,7 @@ void main() {
       expect(find.byKey(const Key('action_attendance')), findsOneWidget);
       expect(find.byKey(const Key('action_material')), findsOneWidget);
       expect(find.byKey(const Key('action_incident')), findsOneWidget);
-      expect(find.byKey(const Key('action_roster')), findsOneWidget);
+      expect(find.byKey(const Key('action_roster')), findsNothing);
     });
 
     testWidgets('tapping action cards navigates to corresponding routes', (
@@ -175,16 +181,16 @@ void main() {
       expect(find.text('Incident Route'), findsOneWidget);
     });
 
-    testWidgets('tapping roster card navigates to roster route', (
+    testWidgets('tapping supervisor header card opens the profile', (
       tester,
     ) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byKey(const Key('action_roster')));
+      await tester.tap(find.byKey(const Key('supervisor_profile_card')));
       await tester.pumpAndSettle();
-      expect(find.text('Roster Route'), findsOneWidget);
+      expect(find.text('Profile Route'), findsOneWidget);
     });
 
     testWidgets('renders recent activity feed items from repositories', (

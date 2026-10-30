@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/core/utils/date_ranges.dart';
 import 'package:site_pulse/core/utils/logout_confirmation.dart';
@@ -650,7 +651,9 @@ class _ActivityTile extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        formatTime(item.timestamp),
+                        item.type == ActivityType.incident
+                            ? formatTime(item.timestamp)
+                            : DateFormat('d MMM').format(item.timestamp),
                         style: TextStyle(
                           fontSize: 11,
                           color: AppColors.textSecondary,

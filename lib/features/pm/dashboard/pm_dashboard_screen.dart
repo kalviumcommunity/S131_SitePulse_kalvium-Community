@@ -125,7 +125,7 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
       return '${diff.inHours}h ago';
     }
     final days = diff.inDays;
-    return '$days days ago';
+    return days == 1 ? '1 day ago' : '$days days ago';
   }
 
   bool _isSyncStale(DateTime? dt) {
@@ -165,7 +165,6 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
   Widget build(BuildContext context) {
     final authRepo = ref.watch(authRepositoryProvider);
     final user = authRepo.currentUser;
-
     final sitesAsync = ref.watch(_allSitesProvider);
     final query = _PmDashboardQuery(_selectedSiteId, _dateRange);
     final materialsAsync = ref.watch(_allMaterialsProvider(_selectedSiteId));
@@ -480,6 +479,27 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
                         'Tap site to inspect',
                         style: const TextStyle(
                           fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade400,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Amber outline: no entry in the last 24 hours',
+                        style: TextStyle(
+                          fontSize: 11,
                           color: AppColors.textSecondary,
                         ),
                       ),

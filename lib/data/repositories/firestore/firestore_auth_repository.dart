@@ -55,6 +55,7 @@ class FirestoreAuthRepository implements AuthRepository {
           role: UserRole.fromString(data['role'] as String? ?? ''),
           name: data['name'] as String? ?? '',
           siteId: data['siteId'] as String?,
+          email: firebaseUser.email,
           hasPendingWrites: doc.metadata.hasPendingWrites,
         );
         _currentUser = appUser;
@@ -108,6 +109,7 @@ class FirestoreAuthRepository implements AuthRepository {
         role: UserRole.fromString(data['role'] as String? ?? ''),
         name: data['name'] as String? ?? '',
         siteId: data['siteId'] as String?,
+        email: user.email,
         hasPendingWrites: doc.metadata.hasPendingWrites,
       );
       _currentUser = appUser;

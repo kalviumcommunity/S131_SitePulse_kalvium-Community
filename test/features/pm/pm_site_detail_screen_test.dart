@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/data/models/app_user.dart';
+import 'package:site_pulse/data/models/attendance_entry.dart';
 import 'package:site_pulse/data/models/material_log.dart';
 import 'package:site_pulse/data/models/site.dart';
 import 'package:site_pulse/data/providers.dart';
@@ -21,6 +22,46 @@ class _CustomMaterialLogsRepository extends FakeMaterialRepository {
     DateTime? endDate,
   }) {
     return _logs;
+  }
+}
+
+class _TrackingAttendanceRepository extends FakeAttendanceRepository {
+  _TrackingAttendanceRepository({super.initialAttendance});
+
+  DateTime? startDate;
+  DateTime? endDate;
+
+  @override
+  Stream<List<AttendanceEntry>> watchAttendance({
+    String? siteId,
+    DateTime? date,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    this.startDate = startDate;
+    this.endDate = endDate;
+    return super.watchAttendance(
+      siteId: siteId,
+      date: date,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+}
+
+class _CustomAttendanceRepository extends FakeAttendanceRepository {
+  _CustomAttendanceRepository(this._records);
+
+  final Stream<List<AttendanceEntry>> _records;
+
+  @override
+  Stream<List<AttendanceEntry>> watchAttendance({
+    String? siteId,
+    DateTime? date,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return _records;
   }
 }
 
@@ -73,15 +114,145 @@ Widget buildSiteDetailApp({
 
 void main() {
   group('PmSiteDetailScreen Widget Tests', () {
-    testWidgets('renders site name in AppBar and 3 tabs', (tester) async {
+    testWidgets('attendance chart renders one bar per day for a week', (
+      tester,
+    ) async {
+      final today = DateTime.now();
+      final repository = FakeAttendanceRepository(
+        initialAttendance: [
+          AttendanceEntry(
+            id: 'attendance-today',
+            workerId: 'worker-1',
+            date: today,
+            status: AttendanceStatus.present,
+            siteId: 'site-1',
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        buildSiteDetailApp(attendanceRepo: repository),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byKey(const Key('attendance_chart')), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget.key is ValueKey<String> &&
+              (widget.key as ValueKey<String>).value.startsWith(
+                'attendance_chart_bar_',
+              ),
+        ),
+        findsNWidgets(7),
+      );
+      expect(
+        find.byKey(
+          Key(
+            'attendance_chart_bar_${AttendanceEntry.dateKeyFromDate(today)}',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          Key(
+            'attendance_chart_bar_${AttendanceEntry.dateKeyFromDate(
+              today.subtract(const Duration(days: 6)),
+            )}',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Present'), findsOneWidget);
+      expect(find.text('Half-day'), findsOneWidget);
+      expect(find.text('Absent'), findsOneWidget);
+    });
+
+    testWidgets('Month toggle changes attendance query to last 30 days', (
+      tester,
+    ) async {
+      final repository = _TrackingAttendanceRepository(
+        initialAttendance: [
+          AttendanceEntry(
+            id: 'attendance-today',
+            workerId: 'worker-1',
+            date: DateTime.now(),
+            status: AttendanceStatus.present,
+            siteId: 'site-1',
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        buildSiteDetailApp(attendanceRepo: repository),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('Month'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(repository.startDate, isNotNull);
+      expect(repository.endDate, isNotNull);
+      expect(repository.endDate!.difference(repository.startDate!).inDays, 29);
+      expect(repository.startDate!.hour, 0);
+      expect(repository.endDate!.hour, 23);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget.key is ValueKey<String> &&
+              (widget.key as ValueKey<String>).value.startsWith(
+                'attendance_chart_bar_',
+              ),
+        ),
+        findsNWidgets(30),
+      );
+    });
+
+    testWidgets('attendance loading and empty states render', (tester) async {
+      final pendingRepository = _CustomAttendanceRepository(
+        Stream<List<AttendanceEntry>>.multi((_) {}),
+      );
+      addTearDown(pendingRepository.dispose);
+      await tester.pumpWidget(
+        buildSiteDetailApp(attendanceRepo: pendingRepository),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Loading attendance history…'), findsOneWidget);
+      expect(find.byKey(const Key('attendance_chart')), findsNothing);
+
+      await tester.pumpWidget(
+        buildSiteDetailApp(
+          attendanceRepo: FakeAttendanceRepository(initialAttendance: []),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.text('No attendance records found for this period.'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('attendance_chart')), findsNothing);
+    });
+
+    testWidgets('site detail has title, back button and 3 bottom tabs', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSiteDetailApp());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Downtown Heights'), findsOneWidget);
+      expect(find.byKey(const Key('pm_site_back')), findsOneWidget);
       expect(find.byKey(const Key('tab_attendance')), findsOneWidget);
       expect(find.byKey(const Key('tab_materials')), findsOneWidget);
       expect(find.byKey(const Key('tab_incidents')), findsOneWidget);
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byType(TabBar), findsNothing);
     });
 
     testWidgets('attendance tab displays day card and expands worker details', (
@@ -173,7 +344,8 @@ void main() {
       );
       addTearDown(repository.dispose);
       await tester.pumpWidget(buildSiteDetailApp(materialRepo: repository));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byKey(const Key('tab_materials')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));

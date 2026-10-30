@@ -10,12 +10,14 @@ class FakeAuthRepository implements AuthRepository {
       role: UserRole.supervisor,
       name: 'Suresh Kumar',
       siteId: 'site-1',
+      email: 'sup1@sitepulse.test',
     ),
     const AppUser(
       uid: 'user-pm-1',
       role: UserRole.pm,
       name: 'Priya Sharma',
       siteId: null,
+      email: 'pm@sitepulse.test',
     ),
   ];
 

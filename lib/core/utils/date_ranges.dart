@@ -12,3 +12,14 @@ DateTimeRange lastSevenDays({DateTime? now}) {
     end: end,
   );
 }
+
+DateTimeRange lastThirtyDays({DateTime? now}) {
+  final today = now ?? DateTime.now();
+  final end = DateTime(today.year, today.month, today.day, 23, 59, 59);
+  return DateTimeRange(
+    start: DateTime(today.year, today.month, today.day).subtract(
+      const Duration(days: 29),
+    ),
+    end: end,
+  );
+}

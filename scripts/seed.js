@@ -2,8 +2,9 @@
  * seed.js - Firestore & Firebase Auth seed script for SitePulse
  *
  * Usage:
- *   node seed.js         # Idempotent seed
- *   node seed.js --reset # Clears seeded subcollections for the 3 sites, then seeds
+ *   node seed.js                      # Existing 3-site seed
+ *   node seed.js --reset              # Clears seeded subcollections, then seeds
+ *   node seed.js --reset --profile=full # Clears and seeds the 5-site demo profile
  */
 
 const admin = require('firebase-admin');
@@ -27,7 +28,7 @@ const auth = admin.auth();
 const PASSWORD_ALL = 'SitePulse#2026';
 
 // 2. Target definitions
-const USER_DEFS = [
+const DEFAULT_USER_DEFS = [
   {
     email: 'pm@sitepulse.test',
     password: PASSWORD_ALL,
@@ -58,11 +59,41 @@ const USER_DEFS = [
   },
 ];
 
-const SITE_DEFS = [
+const DEFAULT_SITE_DEFS = [
   { id: 'site_metro', name: 'Metro Rail Station 4B' },
   { id: 'site_harbor', name: 'Harbor Terminal I' },
   { id: 'site_highway', name: 'Highway 101 Overpass' },
 ];
+
+const FULL_SITE_DEFS = [
+  { id: 'site_metro', name: 'Bengaluru Namma Metro Purple Line Extension' },
+  { id: 'site_harbor', name: 'Kochi Vallarpadam Container Terminal' },
+  { id: 'site_highway', name: 'Delhi-Mumbai Expressway Package 9' },
+  { id: 'site_pune', name: 'Pune Hinjawadi IT Park Phase 3' },
+  { id: 'site_jaipur', name: 'Jaipur Solar Park Expansion' },
+];
+
+const isFullProfile = process.argv.includes('--profile=full');
+const USER_DEFS = isFullProfile
+  ? [
+      ...DEFAULT_USER_DEFS,
+      {
+        email: 'sup4@sitepulse.test',
+        password: PASSWORD_ALL,
+        displayName: 'Anjali Deshmukh',
+        role: 'supervisor',
+        siteId: 'site_pune',
+      },
+      {
+        email: 'sup5@sitepulse.test',
+        password: PASSWORD_ALL,
+        displayName: 'Mohit Sharma',
+        role: 'supervisor',
+        siteId: 'site_jaipur',
+      },
+    ]
+  : DEFAULT_USER_DEFS;
+const SITE_DEFS = isFullProfile ? FULL_SITE_DEFS : DEFAULT_SITE_DEFS;
 
 const TRADES = ['Mason', 'Carpenter', 'Electrician', 'Welder', 'Helper'];
 
@@ -96,6 +127,53 @@ function getDateInfo(daysAgo, hour = 9, minute = 0) {
     dateKey: `${yyyy}-${mm}-${dd}`,
     compact: `${yyyy}${mm}${dd}`,
     timestamp: admin.firestore.Timestamp.fromDate(d),
+  };
+}
+
+function getISTDateInfo(daysAgo) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const part = (type) => parts.find((value) => value.type === type).value;
+  const today = new Date(
+    Date.UTC(Number(part('year')), Number(part('month')) - 1, Number(part('day')))
+  );
+  const date = new Date(today);
+  date.setUTCDate(date.getUTCDate() - daysAgo);
+  const yyyy = date.getUTCFullYear();
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(date.getUTCDate()).padStart(2, '0');
+
+  return {
+    daysAgo,
+    year: yyyy,
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+    weekday: date.getUTCDay(),
+    dateKey: `${yyyy}-${mm}-${dd}`,
+    compact: `${yyyy}${mm}${dd}`,
+  };
+}
+
+function getISTClientTimestamp(dayInfo, hour, minute) {
+  const utcMillis =
+    Date.UTC(dayInfo.year, dayInfo.month - 1, dayInfo.day, hour, minute) -
+    330 * 60 * 1000;
+  return admin.firestore.Timestamp.fromDate(new Date(utcMillis));
+}
+
+function seededRandom(seedText) {
+  let state = 2166136261;
+  for (const character of seedText) {
+    state ^= character.charCodeAt(0);
+    state = Math.imul(state, 16777619) >>> 0;
+  }
+  return () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 0x100000000;
   };
 }
 
@@ -195,8 +273,356 @@ async function resetSubcollections() {
   console.log('Reset complete.\n');
 }
 
+function getFullMaterialConfigs(siteId) {
+  const materials = [
+    {
+      id: 'mat_cement',
+      name: 'Portland Cement',
+      unit: 'bags',
+      lowStockThreshold: 20,
+      dailyMin: 3,
+      dailyMax: 8,
+      finalStock: siteId === 'site_metro' ? 8 : 45,
+    },
+    {
+      id: 'mat_rebar',
+      name: '12mm Steel Rebar',
+      unit: 'bundles',
+      lowStockThreshold: 12,
+      dailyMin: 1,
+      dailyMax: 3,
+      finalStock: siteId === 'site_harbor' ? 0 : 32,
+    },
+    {
+      id: 'mat_sand',
+      name: 'River Sand',
+      unit: 'tonnes',
+      lowStockThreshold: 10,
+      dailyMin: 2,
+      dailyMax: 6,
+      finalStock: 38,
+    },
+    {
+      id: 'mat_aggregate',
+      name: 'Crushed Aggregate',
+      unit: 'tonnes',
+      lowStockThreshold: 12,
+      dailyMin: 2,
+      dailyMax: 6,
+      finalStock: 42,
+    },
+    {
+      id: 'mat_bricks',
+      name: 'Red Clay Bricks',
+      unit: 'pieces',
+      lowStockThreshold: 1000,
+      dailyMin: 120,
+      dailyMax: 280,
+      finalStock: 2600,
+    },
+  ];
+  const siteSpecific = {
+    site_metro: {
+      id: 'mat_signal_cable',
+      name: 'Signal Cable',
+      unit: 'coils',
+      lowStockThreshold: 4,
+      dailyMin: 1,
+      dailyMax: 2,
+      finalStock: 16,
+    },
+    site_harbor: {
+      id: 'mat_marine_paint',
+      name: 'Marine Protective Paint',
+      unit: 'drums',
+      lowStockThreshold: 5,
+      dailyMin: 1,
+      dailyMax: 2,
+      finalStock: 18,
+    },
+    site_highway: {
+      id: 'mat_road_barrier',
+      name: 'Concrete Road Barriers',
+      unit: 'pieces',
+      lowStockThreshold: 8,
+      dailyMin: 1,
+      dailyMax: 3,
+      finalStock: 24,
+    },
+    site_pune: {
+      id: 'mat_copper_wire',
+      name: 'Copper Electrical Wire',
+      unit: 'coils',
+      lowStockThreshold: 5,
+      dailyMin: 1,
+      dailyMax: 2,
+      finalStock: 19,
+    },
+    site_jaipur: {
+      id: 'mat_solar_panels',
+      name: 'Solar Panels',
+      unit: 'panels',
+      lowStockThreshold: 20,
+      dailyMin: 2,
+      dailyMax: 5,
+      finalStock: 68,
+    },
+  };
+  return [...materials, siteSpecific[siteId]];
+}
+
+async function seedFullProfile(supervisorBySite) {
+  const workerNames = [
+    'Aarav Sharma',
+    'Meera Patel',
+    'Kabir Khan',
+    'Ananya Reddy',
+    'Ishaan Gupta',
+    'Kavya Nair',
+    'Dev Malhotra',
+    'Sana Shaikh',
+    'Arjun Desai',
+    'Pooja Verma',
+    'Rohan Iyer',
+    'Nisha Kulkarni',
+    'Vivek Joshi',
+    'Diya Menon',
+  ];
+  const trades = [
+    'Mason',
+    'Carpenter',
+    'Electrician',
+    'Welder',
+    'Helper',
+    'Plumber',
+    'Painter',
+    'Scaffolder',
+    'Machine Operator',
+  ];
+  const activeWorkerCounts = [12, 10, 14, 11, 13];
+  const inactiveSites = new Set(['site_harbor', 'site_pune', 'site_jaipur']);
+  const sundaySkipSites = new Set(['site_harbor', 'site_pune']);
+  const staleSiteId = 'site_jaipur';
+  const days = Array.from({ length: 30 }, (_, index) =>
+    getISTDateInfo(29 - index)
+  );
+  const batchManager = new BatchManager(db);
+  const siteStats = [];
+
+  const incidentPlans = {
+    site_metro: [
+      { daysAgo: 25, severity: 'minor', description: 'Loose cable cover was secured beside the concourse walkway.' },
+      { daysAgo: 18, severity: 'moderate', description: 'A lifting sling showed wear and was removed from service.' },
+      { daysAgo: 12, severity: 'high', description: 'A worker sustained a fall injury near the elevated platform.' },
+      { daysAgo: 5, severity: 'critical', description: 'A temporary support shifted during the station slab pour.' },
+    ],
+    site_harbor: [],
+    site_highway: [
+      { daysAgo: 23, severity: 'moderate', description: 'A delivery vehicle blocked the marked pedestrian route.' },
+      { daysAgo: 10, severity: 'high', description: 'Excavation edge protection failed beside the service road.' },
+      { daysAgo: 6, severity: 'critical', description: 'A crane load swung close to an occupied work platform.' },
+    ],
+    site_pune: [
+      { daysAgo: 17, severity: 'minor', description: 'A temporary light fitting was replaced in the stairwell.' },
+      { daysAgo: 8, severity: 'high', description: 'Electrical isolation was missing at a live panel location.' },
+    ],
+    site_jaipur: [
+      { daysAgo: 24, severity: 'minor', description: 'A damaged safety sign was replaced at the site entrance.' },
+      { daysAgo: 9, severity: 'moderate', description: 'A toolbox was left unsecured beside the inverter shed.' },
+    ],
+  };
+
+  for (let siteIndex = 0; siteIndex < SITE_DEFS.length; siteIndex++) {
+    const site = SITE_DEFS[siteIndex];
+    const siteId = site.id;
+    const supervisor = supervisorBySite[siteId];
+    const siteRef = db.collection('sites').doc(siteId);
+    const stats = {
+      site: site.name,
+      workers: 0,
+      attendance: 0,
+      materialLogs: 0,
+      incidents: 0,
+      lowStockItems: 0,
+    };
+    const workers = [];
+    let siteNewestTimestamp = null;
+    const trackNewest = (timestamp) => {
+      if (
+        !siteNewestTimestamp ||
+        timestamp.toMillis() > siteNewestTimestamp.toMillis()
+      ) {
+        siteNewestTimestamp = timestamp;
+      }
+    };
+
+    const workerCount = activeWorkerCounts[siteIndex];
+    for (let index = 0; index < workerCount; index++) {
+      const workerNumber = index + 1;
+      const workerId = `w_${siteId}_${String(workerNumber).padStart(2, '0')}`;
+      const workerData = {
+        name: workerNames[(index + siteIndex * 3) % workerNames.length],
+        trade: trades[(index + siteIndex) % trades.length],
+        workerCode: `${siteId.slice(5, 8).toUpperCase()}-${String(workerNumber).padStart(3, '0')}`,
+        active: true,
+      };
+      await batchManager.set(siteRef.collection('workers').doc(workerId), workerData);
+      workers.push({ id: workerId });
+      stats.workers++;
+    }
+
+    if (inactiveSites.has(siteId)) {
+      const workerId = `w_${siteId}_inactive_01`;
+      await batchManager.set(siteRef.collection('workers').doc(workerId), {
+        name: `Former Worker ${siteIndex + 1}`,
+        trade: trades[(siteIndex + 2) % trades.length],
+        workerCode: `${siteId.slice(5, 8).toUpperCase()}-I01`,
+        active: false,
+      });
+      stats.workers++;
+    }
+
+    for (const dayInfo of days) {
+      if (siteId === staleSiteId && dayInfo.daysAgo <= 2) continue;
+      if (
+        sundaySkipSites.has(siteId) &&
+        dayInfo.weekday === 0
+      ) {
+        continue;
+      }
+
+      const random = seededRandom(`${siteId}:${dayInfo.dateKey}:attendance`);
+      const badDay = random() < 0.08;
+      for (let workerIndex = 0; workerIndex < workers.length; workerIndex++) {
+        const roll = random();
+        let status;
+        if (badDay) {
+          status = roll < 0.72 ? 'present' : roll < 0.84 ? 'half' : 'absent';
+        } else {
+          status = roll < 0.88 ? 'present' : roll < 0.95 ? 'half' : 'absent';
+        }
+        const hour = 8 + Math.floor(random() * 3);
+        const minute = Math.floor(random() * 60);
+        const updatedAt = getISTClientTimestamp(dayInfo, hour, minute);
+        trackNewest(updatedAt);
+
+        const attendanceId =
+          `${siteId}_${workers[workerIndex].id}_${dayInfo.compact}`;
+        await batchManager.set(
+          siteRef.collection('attendance').doc(attendanceId),
+          {
+            workerId: workers[workerIndex].id,
+            status,
+            dateKey: dayInfo.dateKey,
+            updatedAt,
+            createdBy: supervisor.uid,
+          }
+        );
+        stats.attendance++;
+      }
+    }
+
+    for (const material of getFullMaterialConfigs(siteId)) {
+      const logDays = days.filter(
+        (dayInfo) => !(siteId === staleSiteId && dayInfo.daysAgo <= 2)
+      );
+      const random = seededRandom(`${siteId}:${material.id}:usage`);
+      const usages = logDays.map(
+        () =>
+          material.dailyMin +
+          Math.floor(random() * (material.dailyMax - material.dailyMin + 1))
+      );
+      const openingStock =
+        material.finalStock + usages.reduce((total, quantity) => total + quantity, 0);
+      let remaining = openingStock;
+
+      await batchManager.set(siteRef.collection('materials').doc(material.id), {
+        name: material.name,
+        unit: material.unit,
+        openingStock,
+        currentStock: material.finalStock,
+        lowStockThreshold: material.lowStockThreshold,
+      });
+      if (material.finalStock <= material.lowStockThreshold) {
+        stats.lowStockItems++;
+      }
+
+      for (let index = 0; index < logDays.length; index++) {
+        const dayInfo = logDays[index];
+        const qtyUsed = usages[index];
+        remaining -= qtyUsed;
+        const createdAt = getISTClientTimestamp(
+          dayInfo,
+          14,
+          (index * 7) % 60
+        );
+        trackNewest(createdAt);
+        const logId = `log_${siteId}_${material.id}_${dayInfo.compact}`;
+        await batchManager.set(
+          siteRef.collection('materialLogs').doc(logId),
+          {
+            materialId: material.id,
+            materialName: material.name,
+            qtyUsed,
+            remainingAfter: remaining,
+            dateKey: dayInfo.dateKey,
+            createdAt,
+            createdBy: supervisor.uid,
+          }
+        );
+        stats.materialLogs++;
+      }
+      if (remaining !== material.finalStock) {
+        throw new Error(`Material balance mismatch for ${siteId}/${material.id}`);
+      }
+    }
+
+    for (const incident of incidentPlans[siteId]) {
+      const dayInfo = days.find((value) => value.daysAgo === incident.daysAgo);
+      const occurredAt = getISTClientTimestamp(dayInfo, 10, 30);
+      trackNewest(occurredAt);
+      await batchManager.set(
+        siteRef.collection('incidents').doc(`inc_${siteId}_${dayInfo.compact}`),
+        {
+          severity: incident.severity,
+          description: incident.description,
+          occurredAt,
+          createdBy: supervisor.uid,
+        }
+      );
+      stats.incidents++;
+    }
+
+    if (!siteNewestTimestamp) {
+      throw new Error(`No activity generated for ${siteId}`);
+    }
+    await batchManager.set(siteRef, {
+      name: site.name,
+      lastEntryAt: siteNewestTimestamp,
+    });
+    siteStats.push(stats);
+  }
+
+  await batchManager.commit();
+  console.log('\nFULL PROFILE SEED COMPLETED');
+  console.log(`Users created/verified: ${USER_DEFS.length}`);
+  console.log(`Sites seeded: ${SITE_DEFS.length}`);
+  console.table(siteStats);
+  console.log(`Test account password: ${PASSWORD_ALL}\n`);
+}
+
 // 6. Main seed routine
 async function main() {
+  const profileArguments = process.argv.filter((arg) =>
+    arg.startsWith('--profile=')
+  );
+  if (
+    profileArguments.some((arg) => arg !== '--profile=full') ||
+    profileArguments.length > 1
+  ) {
+    throw new Error('The only supported profile is --profile=full.');
+  }
+
   const isReset = process.argv.includes('--reset');
   console.log(`Starting SitePulse seed script (projectId: ${projectId})...`);
 
@@ -213,11 +639,18 @@ async function main() {
     site_metro: users['sup1@sitepulse.test'],
     site_harbor: users['sup2@sitepulse.test'],
     site_highway: users['sup3@sitepulse.test'],
+    site_pune: users['sup4@sitepulse.test'],
+    site_jaipur: users['sup5@sitepulse.test'],
   };
 
   // 2. Reset if requested
   if (isReset) {
     await resetSubcollections();
+  }
+
+  if (isFullProfile) {
+    await seedFullProfile(supervisorBySite);
+    return;
   }
 
   // 3. Prepare dates for last 3 days (relative to run date: day -2, day -1, today)

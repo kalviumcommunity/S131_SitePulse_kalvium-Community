@@ -20,7 +20,7 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
   FirestoreAttendanceRepository({
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
-    this._defaultLimit = 500,
+    this._defaultLimit = 1500,
   }) : _db = firestore ?? FirebaseFirestore.instance,
        _auth = auth ?? FirebaseAuth.instance;
 

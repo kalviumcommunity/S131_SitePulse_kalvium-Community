@@ -8,6 +8,7 @@ import 'package:site_pulse/data/models/app_user.dart';
 import 'package:site_pulse/data/models/attendance_entry.dart';
 import 'package:site_pulse/data/models/incident.dart';
 import 'package:site_pulse/data/models/material.dart' as sp;
+import 'package:site_pulse/data/models/site.dart';
 import 'package:site_pulse/data/models/worker.dart';
 import 'package:site_pulse/data/providers.dart';
 import 'package:site_pulse/data/repositories/fakes/fakes.dart';
@@ -181,6 +182,30 @@ void main() {
       expect(find.byKey(const Key('site_card_site-2')), findsOneWidget);
       expect(find.byKey(const Key('site_card_site-3')), findsOneWidget);
       expect(find.text('Downtown Heights'), findsOneWidget);
+    });
+
+    testWidgets('explains stale-site outline and pluralizes one day', (
+      tester,
+    ) async {
+      final siteRepo = FakeSiteRepository(
+        initialSites: [
+          Site(
+            id: 'site-1',
+            name: 'Downtown Heights',
+            lastEntryAt: DateTime.now().subtract(const Duration(days: 1)),
+          ),
+        ],
+      );
+      await tester.pumpWidget(buildDashboardApp(siteRepo: siteRepo));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(
+        find.text('Amber outline: no entry in the last 24 hours'),
+        findsOneWidget,
+      );
+      expect(find.text('1 day ago'), findsOneWidget);
+      expect(find.text('1 days ago'), findsNothing);
     });
 
     testWidgets('tapping a site card navigates to /pm/site/:siteId', (

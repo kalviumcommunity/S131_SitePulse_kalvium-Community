@@ -48,12 +48,23 @@ npm run seed
 ```
 
 ### Reset & Re-Seed
-Deletes all documents in seeded subcollections (`workers`, `attendance`, `materials`, `materialLogs`, `incidents`) of the 3 sites, then re-seeds fresh data. Useful for resetting before a demo:
+Deletes all documents in seeded subcollections (`workers`, `attendance`, `materials`, `materialLogs`, `incidents`) of the selected profile's sites, then re-seeds fresh data. The default profile uses the existing 3 sites:
 ```bash
 node seed.js --reset
 # or
 npm run seed:reset
 ```
+
+### Full Demo Profile
+The full profile seeds the existing PM and supervisor accounts plus `sup4` and `sup5`, five Indian construction sites, 10–14 active workers per site, optional inactive workers, 30 days of attendance and material logs, and incidents across all severities. Site IDs shared with the default profile remain the same.
+
+Configure a service-account key in PowerShell, then run from the repository root:
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\service-account.json"
+node scripts/seed.js --reset --profile=full
+```
+
+`--reset` deletes documents only from the seeded site subcollections for the selected profile's fixed site IDs; it does not delete users or unrelated collections. It will delete any data currently stored in those subcollections, so use it only with a demo project or emulator. Keep the service-account key private and do not commit it.
 
 ## Evidence Scripts
 
@@ -82,6 +93,8 @@ All accounts share the default password: **`SitePulse#2026`**
 | `sup1@sitepulse.test` | `supervisor` | Ramesh Yadav | Metro Rail Station 4B | `site_metro` |
 | `sup2@sitepulse.test` | `supervisor` | Vikram Singh | Harbor Terminal I | `site_harbor` |
 | `sup3@sitepulse.test` | `supervisor` | Sunil Verma | Highway 101 Overpass | `site_highway` |
+| `sup4@sitepulse.test` | `supervisor` | Anjali Deshmukh | Pune Hinjawadi IT Park Phase 3 | `site_pune` (full profile) |
+| `sup5@sitepulse.test` | `supervisor` | Mohit Sharma | Jaipur Solar Park Expansion | `site_jaipur` (full profile) |
 
 ## Data Overview
 
@@ -92,3 +105,4 @@ All accounts share the default password: **`SitePulse#2026`**
 - **Workers**: 12 active workers per site across trades (Mason, Carpenter, Electrician, Welder, Helper).
 - **Attendance**: 36 entries per site spanning the last 3 days with a realistic ~90% present rate.
 - **Timestamps**: All entries use client timestamps and track the newest entry on `sites/{siteId}.lastEntryAt`.
+- **Full profile**: Use `--profile=full` for five sites and 30 days of deterministic data. The Jaipur demo site intentionally has no entries for the final three days to represent a stale site while keeping `lastEntryAt` accurate; some sites also skip Sundays.

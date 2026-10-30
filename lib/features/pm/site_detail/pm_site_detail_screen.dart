@@ -88,6 +88,8 @@ class _SiteDetailQuery {
   int get hashCode => Object.hash(siteId, range.start, range.end);
 }
 
+enum _AttendanceRange { week, month }
+
 // ---------------------------------------------------------------------------
 // Screen
 // ---------------------------------------------------------------------------
@@ -101,21 +103,15 @@ class PmSiteDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+{
+  int _selectedTabIndex = 0;
+  _AttendanceRange? _attendanceRange = _AttendanceRange.week;
   late DateTimeRange _dateRange;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _dateRange = lastSevenDays();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   String _formatRangeLabel(DateTimeRange r) {
@@ -160,8 +156,19 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
             59,
           ),
         );
+        _attendanceRange = null;
       });
     }
+  }
+
+  void _selectAttendanceRange(_AttendanceRange range) {
+    setState(() {
+      _attendanceRange = range;
+      _dateRange = switch (range) {
+        _AttendanceRange.week => lastSevenDays(),
+        _AttendanceRange.month => lastThirtyDays(),
+      };
+    });
   }
 
   @override
@@ -171,6 +178,16 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          key: const Key('pm_site_back'),
+          tooltip: 'Back',
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
         title: siteAsync.when(
           loading: () => const Text('Site Detail…'),
           error: (_, _) => Text('Site: ${widget.siteId}'),
@@ -184,53 +201,58 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
             onPressed: _pickDateRange,
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(49),
-          child: Column(
-            children: [
-              TabBar(
-                controller: _tabController,
-                tabs: const [
-                  Tab(
-                    key: Key('tab_attendance'),
-                    icon: Icon(Icons.how_to_reg),
-                    text: 'Attendance',
+      ),
+      body: AppPageBackground(
+        child: Column(
+          children: [
+            const OfflineBanner(),
+            Expanded(
+              child: IndexedStack(
+                index: _selectedTabIndex,
+                children: [
+                  _AttendanceTab(
+                    key: const Key('tab_attendance_view'),
+                    siteId: widget.siteId,
+                    query: query,
+                    selectedRange: _attendanceRange,
+                    onRangeChanged: _selectAttendanceRange,
                   ),
-                  Tab(
-                    key: Key('tab_materials'),
-                    icon: Icon(Icons.inventory_2),
-                    text: 'Materials',
+                  _MaterialsTab(
+                    key: const Key('tab_materials_view'),
+                    query: query,
                   ),
-                  Tab(
-                    key: Key('tab_incidents'),
-                    icon: Icon(Icons.warning_amber),
-                    text: 'Incidents',
+                  _IncidentsTab(
+                    key: const Key('tab_incidents_view'),
+                    query: query,
                   ),
                 ],
               ),
-              const OfflineBanner(),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-      body: AppPageBackground(
-        child: TabBarView(
-        controller: _tabController,
-        children: [
-          // ── Tab 1: Attendance History ─────────────────────────────
-          _AttendanceTab(
-            key: const Key('tab_attendance_view'),
-            siteId: widget.siteId,
-            query: query,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedTabIndex,
+        onDestinationSelected: (index) {
+          setState(() => _selectedTabIndex = index);
+        },
+        destinations: const [
+          NavigationDestination(
+            key: Key('tab_attendance'),
+            icon: Icon(Icons.how_to_reg),
+            label: 'Attendance',
           ),
-
-          // ── Tab 2: Materials Stock & Logs ────────────────────────
-          _MaterialsTab(key: const Key('tab_materials_view'), query: query),
-
-          // ── Tab 3: Incidents History ─────────────────────────────
-          _IncidentsTab(key: const Key('tab_incidents_view'), query: query),
+          NavigationDestination(
+            key: Key('tab_materials'),
+            icon: Icon(Icons.inventory_2),
+            label: 'Materials',
+          ),
+          NavigationDestination(
+            key: Key('tab_incidents'),
+            icon: Icon(Icons.warning_amber),
+            label: 'Incidents',
+          ),
         ],
-      ),
       ),
     );
   }
@@ -243,8 +265,16 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
 class _AttendanceTab extends ConsumerWidget {
   final String siteId;
   final _SiteDetailQuery query;
+  final _AttendanceRange? selectedRange;
+  final ValueChanged<_AttendanceRange> onRangeChanged;
 
-  const _AttendanceTab({super.key, required this.siteId, required this.query});
+  const _AttendanceTab({
+    super.key,
+    required this.siteId,
+    required this.query,
+    required this.selectedRange,
+    required this.onRangeChanged,
+  });
 
   String _formatDate(DateTime d) {
     const months = [
@@ -269,119 +299,417 @@ class _AttendanceTab extends ConsumerWidget {
     final attendanceAsync = ref.watch(_siteDetailAttendanceProvider(query));
     final workersAsync = ref.watch(_siteDetailWorkersProvider(siteId));
 
-    return attendanceAsync.when(
-      loading: () => const LoadingView(message: 'Loading attendance history…'),
-      error: (e, _) => ErrorView(
-        message: 'Failed to load attendance: $e',
-        onRetry: () => ref.invalidate(_siteDetailAttendanceProvider(query)),
-      ),
-      data: (records) {
-        if (records.isEmpty) {
-          return const EmptyView(
-            message: 'No attendance records found for this period.',
-          );
-        }
+    Future<void> refresh() async {
+      ref.invalidate(_siteDetailAttendanceProvider(query));
+      ref.invalidate(_siteDetailWorkersProvider(siteId));
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+    }
 
-        final workers = workersAsync.value ?? [];
-        final workerMap = {for (final w in workers) w.id: w};
+    final range = selectedRange;
+    final selected = range == null
+        ? <_AttendanceRange>{}
+        : <_AttendanceRange>{range};
 
-        // Group by day
-        final byDay = <String, List<AttendanceEntry>>{};
-        for (final r in records) {
-          final key = '${r.date.year}-${r.date.month}-${r.date.day}';
-          byDay.putIfAbsent(key, () => []).add(r);
-        }
-
-        final sortedDays = byDay.keys.toList()..sort((a, b) => b.compareTo(a));
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: sortedDays.length,
-          itemBuilder: (context, index) {
-            final dayKey = sortedDays[index];
-            final dayRecords = byDay[dayKey]!;
-            final date = dayRecords.first.date;
-
-            final present = dayRecords
-                .where((r) => r.status == AttendanceStatus.present)
-                .length;
-            final half = dayRecords
-                .where((r) => r.status == AttendanceStatus.half)
-                .length;
-            final absent = dayRecords
-                .where((r) => r.status == AttendanceStatus.absent)
-                .length;
-
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+    return RefreshIndicator(
+      onRefresh: refresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: [
+          SegmentedButton<_AttendanceRange>(
+            key: const Key('attendance_range_toggle'),
+            segments: const [
+              ButtonSegment(
+                value: _AttendanceRange.week,
+                label: Text('Week'),
               ),
-              child: ExpansionTile(
-                key: Key('attendance_day_$dayKey'),
-                title: Text(
-                  _formatDate(date),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  'Present: $present  •  Half: $half  •  Absent: $absent',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
+              ButtonSegment(
+                value: _AttendanceRange.month,
+                label: Text('Month'),
+              ),
+            ],
+            selected: selected,
+            showSelectedIcon: false,
+            onSelectionChanged: (selection) {
+              if (selection.isNotEmpty) onRangeChanged(selection.first);
+            },
+          ),
+          const SizedBox(height: 16),
+          attendanceAsync.when(
+            loading: () => const SizedBox(
+              height: 240,
+              child: Center(
+                child: LoadingView(message: 'Loading attendance history…'),
+              ),
+            ),
+            error: (error, _) => ErrorView(
+              message: 'Failed to load attendance: $error',
+              onRetry: () =>
+                  ref.invalidate(_siteDetailAttendanceProvider(query)),
+            ),
+            data: (records) {
+              if (records.isEmpty) {
+                return const SizedBox(
+                  height: 240,
+                  child: Center(
+                    child: EmptyView(
+                      message:
+                          'No attendance records found for this period.',
+                    ),
+                  ),
+                );
+              }
+              return _AttendanceHistory(
+                records: records,
+                workers: workersAsync.value ?? const [],
+                range: query.range,
+                formatDate: _formatDate,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AttendanceHistory extends StatelessWidget {
+  const _AttendanceHistory({
+    required this.records,
+    required this.workers,
+    required this.range,
+    required this.formatDate,
+  });
+
+  final List<AttendanceEntry> records;
+  final List<Worker> workers;
+  final DateTimeRange range;
+  final String Function(DateTime) formatDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final recordsByDay = <String, List<AttendanceEntry>>{};
+    for (final record in records) {
+      final dayKey = AttendanceEntry.dateKeyFromDate(record.date);
+      recordsByDay.putIfAbsent(dayKey, () => []).add(record);
+    }
+
+    final dates = <DateTime>[];
+    for (
+      var date = DateTime(range.start.year, range.start.month, range.start.day);
+      !date.isAfter(range.end);
+      date = date.add(const Duration(days: 1))
+    ) {
+      dates.add(date);
+    }
+
+    final workerMap = {for (final worker in workers) worker.id: worker};
+    final recordedDays = recordsByDay.keys.toList()
+      ..sort((first, second) => second.compareTo(first));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _AttendanceChart(dates: dates, recordsByDay: recordsByDay),
+        const SizedBox(height: 16),
+        for (final dayKey in recordedDays)
+          _AttendanceDayCard(
+            dayKey: dayKey,
+            records: recordsByDay[dayKey]!,
+            workerMap: workerMap,
+            formatDate: formatDate,
+          ),
+      ],
+    );
+  }
+}
+
+class _AttendanceDayCard extends StatelessWidget {
+  const _AttendanceDayCard({
+    required this.dayKey,
+    required this.records,
+    required this.workerMap,
+    required this.formatDate,
+  });
+
+  final String dayKey;
+  final List<AttendanceEntry> records;
+  final Map<String, Worker> workerMap;
+  final String Function(DateTime) formatDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final present = records
+        .where((record) => record.status == AttendanceStatus.present)
+        .length;
+    final half = records
+        .where((record) => record.status == AttendanceStatus.half)
+        .length;
+    final absent = records
+        .where((record) => record.status == AttendanceStatus.absent)
+        .length;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ExpansionTile(
+        key: Key('attendance_day_$dayKey'),
+        title: Text(
+          formatDate(records.first.date),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          'Present: $present  •  Half: $half  •  Absent: $absent',
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        children: records.map((record) {
+          final worker = workerMap[record.workerId];
+          final color = switch (record.status) {
+            AttendanceStatus.present => AppColors.success,
+            AttendanceStatus.half => AppColors.warning,
+            AttendanceStatus.absent => AppColors.critical,
+          };
+
+          return ListTile(
+            dense: true,
+            title: Text(
+              worker?.name ?? record.workerId,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(worker?.trade ?? 'Worker'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    record.status.name.toUpperCase(),
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
-                children: dayRecords.map((r) {
-                  final worker = workerMap[r.workerId];
-                  final name = worker?.name ?? r.workerId;
-                  final trade = worker?.trade ?? 'Worker';
+                const SizedBox(width: 8),
+                SyncChip(pending: record.hasPendingWrites),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
 
-                  Color statusColor = AppColors.success;
-                  if (r.status == AttendanceStatus.half) {
-                    statusColor = AppColors.warning;
-                  } else if (r.status == AttendanceStatus.absent) {
-                    statusColor = AppColors.critical;
-                  }
+class _AttendanceChart extends StatelessWidget {
+  const _AttendanceChart({
+    required this.dates,
+    required this.recordsByDay,
+  });
 
-                  return ListTile(
-                    dense: true,
-                    title: Text(
-                      name,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+  final List<DateTime> dates;
+  final Map<String, List<AttendanceEntry>> recordsByDay;
+
+  @override
+  Widget build(BuildContext context) {
+    final dailyCounts = [
+      for (final date in dates)
+        _AttendanceCounts.fromRecords(
+          recordsByDay[AttendanceEntry.dateKeyFromDate(date)] ?? const [],
+        ),
+    ];
+    final maxCount = dailyCounts.fold<int>(
+      0,
+      (maximum, counts) => counts.total > maximum ? counts.total : maximum,
+    );
+
+    return Card(
+      key: const Key('attendance_chart'),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: 142,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var index = 0; index < dates.length; index++)
+                    Expanded(
+                      child: _AttendanceBar(
+                        date: dates[index],
+                        counts: dailyCounts[index],
+                        maxCount: maxCount,
+                        showDateLabel:
+                            dates.length <= 7 || index % 5 == 0,
+                      ),
                     ),
-                    subtitle: Text(trade),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            r.status.name.toUpperCase(),
-                            style: TextStyle(
-                              color: statusColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                            ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 12,
+              runSpacing: 6,
+              children: [
+                _AttendanceLegend(color: AppColors.success, label: 'Present'),
+                _AttendanceLegend(color: AppColors.warning, label: 'Half-day'),
+                _AttendanceLegend(color: AppColors.critical, label: 'Absent'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AttendanceCounts {
+  const _AttendanceCounts({
+    required this.present,
+    required this.half,
+    required this.absent,
+  });
+
+  factory _AttendanceCounts.fromRecords(List<AttendanceEntry> records) {
+    return _AttendanceCounts(
+      present: records
+          .where((record) => record.status == AttendanceStatus.present)
+          .length,
+      half: records
+          .where((record) => record.status == AttendanceStatus.half)
+          .length,
+      absent: records
+          .where((record) => record.status == AttendanceStatus.absent)
+          .length,
+    );
+  }
+
+  final int present;
+  final int half;
+  final int absent;
+  int get total => present + half + absent;
+}
+
+class _AttendanceBar extends StatelessWidget {
+  const _AttendanceBar({
+    required this.date,
+    required this.counts,
+    required this.maxCount,
+    required this.showDateLabel,
+  });
+
+  final DateTime date;
+  final _AttendanceCounts counts;
+  final int maxCount;
+  final bool showDateLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final dayKey = AttendanceEntry.dateKeyFromDate(date);
+    final barHeight = counts.total == 0 || maxCount == 0
+        ? 3.0
+        : 104 * counts.total / maxCount;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 1),
+      child: Column(
+        children: [
+          Expanded(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Tooltip(
+                message: '${counts.total} attendance records',
+                child: Container(
+                  key: Key('attendance_chart_bar_$dayKey'),
+                  width: double.infinity,
+                  height: barHeight,
+                  decoration: BoxDecoration(
+                    color: counts.total == 0 ? AppColors.surfaceContainer : null,
+                    border: Border.all(color: AppColors.border),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: counts.total == 0
+                      ? null
+                      : ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: Column(
+                            children: [
+                              if (counts.present > 0)
+                                Expanded(
+                                  flex: counts.present,
+                                  child: ColoredBox(color: AppColors.success),
+                                ),
+                              if (counts.half > 0)
+                                Expanded(
+                                  flex: counts.half,
+                                  child: ColoredBox(color: AppColors.warning),
+                                ),
+                              if (counts.absent > 0)
+                                Expanded(
+                                  flex: counts.absent,
+                                  child: ColoredBox(color: AppColors.critical),
+                                ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        SyncChip(pending: r.hasPendingWrites),
-                      ],
-                    ),
-                  );
-                }).toList(),
+                ),
               ),
-            );
-          },
-        );
-      },
+            ),
+          ),
+          SizedBox(
+            height: 22,
+            child: showDateLabel
+                ? Center(
+                    child: Text(
+                      '${date.day}',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  )
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AttendanceLegend extends StatelessWidget {
+  const _AttendanceLegend({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 10)),
+      ],
     );
   }
 }
@@ -420,20 +748,41 @@ class _MaterialsTab extends ConsumerWidget {
     );
     final logsAsync = ref.watch(_siteDetailMaterialLogsProvider(query));
 
+    Future<void> refresh() async {
+      ref.invalidate(_siteDetailMaterialsProvider(query.siteId));
+      ref.invalidate(_siteDetailMaterialLogsProvider(query));
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+    }
+
     return materialsAsync.when(
-      loading: () => const LoadingView(message: 'Loading materials…'),
-      error: (e, _) => ErrorView(
-        message: 'Failed to load materials: $e',
-        onRetry: () =>
-            ref.invalidate(_siteDetailMaterialsProvider(query.siteId)),
+      loading: () => _refreshableStatus(
+        context,
+        const LoadingView(message: 'Loading materials…'),
+        refresh,
+      ),
+      error: (e, _) => _refreshableStatus(
+        context,
+        ErrorView(
+          message: 'Failed to load materials: $e',
+          onRetry: () =>
+              ref.invalidate(_siteDetailMaterialsProvider(query.siteId)),
+        ),
+        refresh,
       ),
       data: (materials) {
         if (materials.isEmpty) {
-          return const EmptyView(message: 'No materials found.');
+          return _refreshableStatus(
+            context,
+            const EmptyView(message: 'No materials found.'),
+            refresh,
+          );
         }
 
         final materialMap = {for (final m in materials) m.id: m};
-        return SingleChildScrollView(
+        return RefreshIndicator(
+          onRefresh: refresh,
+          child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -610,6 +959,7 @@ class _MaterialsTab extends ConsumerWidget {
               ),
             ],
           ),
+          ),
         );
       },
     );
@@ -673,23 +1023,43 @@ class _IncidentsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final incidentsAsync = ref.watch(_siteDetailIncidentsProvider(query));
 
+    Future<void> refresh() async {
+      ref.invalidate(_siteDetailIncidentsProvider(query));
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+    }
+
     return incidentsAsync.when(
-      loading: () => const LoadingView(message: 'Loading incidents…'),
-      error: (e, _) => ErrorView(
-        message: 'Failed to load incidents: $e',
-        onRetry: () => ref.invalidate(_siteDetailIncidentsProvider(query)),
+      loading: () => _refreshableStatus(
+        context,
+        const LoadingView(message: 'Loading incidents…'),
+        refresh,
+      ),
+      error: (e, _) => _refreshableStatus(
+        context,
+        ErrorView(
+          message: 'Failed to load incidents: $e',
+          onRetry: () => ref.invalidate(_siteDetailIncidentsProvider(query)),
+        ),
+        refresh,
       ),
       data: (incidents) {
         if (incidents.isEmpty) {
-          return const EmptyView(
-            message: 'No safety incidents reported for this site.',
+          return _refreshableStatus(
+            context,
+            const EmptyView(
+              message: 'No safety incidents reported for this site.',
+            ),
+            refresh,
           );
         }
 
         final sorted = incidents.toList()
           ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
 
-        return ListView.separated(
+        return RefreshIndicator(
+          onRefresh: refresh,
+          child: ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           itemCount: sorted.length,
           separatorBuilder: (_, _) => const SizedBox(height: 10),
@@ -772,8 +1142,28 @@ class _IncidentsTab extends ConsumerWidget {
               ),
             );
           },
+          ),
         );
       },
     );
   }
+}
+
+Widget _refreshableStatus(
+  BuildContext context,
+  Widget status,
+  Future<void> Function() onRefresh,
+) {
+  return RefreshIndicator(
+    onRefresh: onRefresh,
+    child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.65,
+          child: Center(child: status),
+        ),
+      ],
+    ),
+  );
 }

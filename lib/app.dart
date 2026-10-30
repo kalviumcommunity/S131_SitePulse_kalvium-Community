@@ -16,6 +16,21 @@ class SitePulseApp extends ConsumerStatefulWidget {
   ConsumerState<SitePulseApp> createState() => _SitePulseAppState();
 }
 
+class SitePulseScrollBehavior extends MaterialScrollBehavior {
+  const SitePulseScrollBehavior();
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) => child;
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const ClampingScrollPhysics();
+}
+
 class _SitePulseAppState extends ConsumerState<SitePulseApp> {
   late final GoRouter _router;
 
@@ -40,6 +55,7 @@ class _SitePulseAppState extends ConsumerState<SitePulseApp> {
     return MaterialApp.router(
       title: 'Site Pulse',
       theme: buildTheme(),
+      scrollBehavior: const SitePulseScrollBehavior(),
       routerConfig: _router,
       builder: (context, child) =>
           SyncFailureBanner(child: child ?? const SizedBox.shrink()),

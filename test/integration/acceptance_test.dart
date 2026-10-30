@@ -103,11 +103,17 @@ void main() {
       expect(find.text('Ramesh Patel'), findsOneWidget);
       expect(find.text('Metro Line 3 Station'), findsOneWidget);
 
-      // Verify all 4 action buttons are available
+      // Verify home actions and footer navigation are available
       expect(find.byKey(const Key('action_attendance')), findsOneWidget);
       expect(find.byKey(const Key('action_material')), findsOneWidget);
       expect(find.byKey(const Key('action_incident')), findsOneWidget);
-      expect(find.byKey(const Key('action_roster')), findsOneWidget);
+      expect(find.byKey(const Key('action_roster')), findsNothing);
+      expect(find.text('Roster'), findsOneWidget);
+      await tester.tap(find.text('Roster'));
+      await tester.pumpAndSettle();
+      expect(find.text('Worker Roster'), findsOneWidget);
+      await tester.tap(find.text('Home'));
+      await tester.pumpAndSettle();
 
       // ── Step 2: Mark Attendance Flow ─────────────────────────────────
       await tester.tap(find.byKey(const Key('action_attendance')));
@@ -146,9 +152,12 @@ void main() {
       expect(find.text('Supervisor Home'), findsOneWidget);
 
       // ── Step 4: Incident Report Flow ─────────────────────────────────
+      await tester.ensureVisible(find.byKey(const Key('action_incident')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('action_incident')));
       await tester.pumpAndSettle();
 
+      // The Home action must open the root-level incident route.
       expect(find.text('Safety Incidents'), findsOneWidget);
 
       // Select High severity -> verify escalation banner appears
@@ -182,6 +191,9 @@ void main() {
       await tester.tap(find.byKey(const Key('logout_button')));
       await tester.pumpAndSettle();
 
+      expect(find.byKey(const Key('logout_confirmation_dialog')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('confirm_logout_button')));
+      await tester.pumpAndSettle();
       expect(find.byKey(const Key('email_field')), findsOneWidget);
       expect(find.byKey(const Key('sign_in_button')), findsOneWidget);
     });
@@ -233,6 +245,9 @@ void main() {
       expect(find.byKey(const Key('tab_attendance')), findsOneWidget);
       expect(find.byKey(const Key('tab_materials')), findsOneWidget);
       expect(find.byKey(const Key('tab_incidents')), findsOneWidget);
+      expect(find.byType(TabBar), findsNothing);
+      expect(find.text('Home'), findsNothing);
+      expect(find.text('Profile'), findsNothing);
 
       // Switch to Materials tab
       await tester.tap(find.byKey(const Key('tab_materials')));
@@ -257,6 +272,9 @@ void main() {
       await tester.tap(find.byKey(const Key('logout_button')));
       await tester.pumpAndSettle();
 
+      expect(find.byKey(const Key('logout_confirmation_dialog')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('confirm_logout_button')));
+      await tester.pumpAndSettle();
       expect(find.byKey(const Key('email_field')), findsOneWidget);
       expect(find.byKey(const Key('sign_in_button')), findsOneWidget);
     });

@@ -3,9 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:site_pulse/data/models/app_user.dart';
 import 'package:site_pulse/data/models/attendance_entry.dart';
+import 'package:site_pulse/data/models/incident.dart';
+import 'package:site_pulse/data/models/material.dart' as sp;
+import 'package:site_pulse/data/models/material_log.dart';
 import 'package:site_pulse/data/models/site.dart';
 import 'package:site_pulse/data/providers.dart';
 import 'package:site_pulse/data/repositories/fakes/fakes.dart';
@@ -91,6 +95,11 @@ Widget buildScreen({
         builder: (context, state) => const Scaffold(body: Text('Roster Route')),
       ),
       GoRoute(
+        path: '/supervisor/profile',
+        builder: (context, state) =>
+            const Scaffold(body: Text('Profile Route')),
+      ),
+      GoRoute(
         path: '/login',
         builder: (context, state) => const Scaffold(body: Text('Login Route')),
       ),
@@ -122,12 +131,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Sarah Connor'), findsOneWidget);
-      expect(find.text('Role: supervisor'), findsOneWidget);
+      expect(find.text('Name: Sarah Connor'), findsNothing);
+      expect(find.text('Role: supervisor'), findsNothing);
       expect(find.byKey(const Key('site_name_header')), findsOneWidget);
       expect(find.text('Downtown Heights'), findsOneWidget);
     });
 
-    testWidgets('renders all 4 action cards/buttons', (tester) async {
+    testWidgets('renders the three home action cards', (tester) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -135,7 +145,7 @@ void main() {
       expect(find.byKey(const Key('action_attendance')), findsOneWidget);
       expect(find.byKey(const Key('action_material')), findsOneWidget);
       expect(find.byKey(const Key('action_incident')), findsOneWidget);
-      expect(find.byKey(const Key('action_roster')), findsOneWidget);
+      expect(find.byKey(const Key('action_roster')), findsNothing);
     });
 
     testWidgets('tapping action cards navigates to corresponding routes', (
@@ -175,16 +185,16 @@ void main() {
       expect(find.text('Incident Route'), findsOneWidget);
     });
 
-    testWidgets('tapping roster card navigates to roster route', (
+    testWidgets('tapping supervisor header card opens the profile', (
       tester,
     ) async {
       await tester.pumpWidget(buildScreen());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.byKey(const Key('action_roster')));
+      await tester.tap(find.byKey(const Key('supervisor_profile_card')));
       await tester.pumpAndSettle();
-      expect(find.text('Roster Route'), findsOneWidget);
+      expect(find.text('Profile Route'), findsOneWidget);
     });
 
     testWidgets('renders recent activity feed items from repositories', (
@@ -196,6 +206,74 @@ void main() {
 
       expect(find.text('Recent Activity Feed'), findsOneWidget);
       expect(find.text('Latest 10 items'), findsOneWidget);
+    });
+
+    testWidgets('activity uses date-only labels for attendance and materials', (
+      tester,
+    ) async {
+      final now = DateTime.now();
+      final yesterday = DateTime(now.year, now.month, now.day).subtract(
+        const Duration(days: 1),
+      );
+      final attendanceRepo = FakeAttendanceRepository(
+        initialAttendance: [
+          AttendanceEntry(
+            id: 'attendance-yesterday',
+            workerId: 'w-1',
+            date: yesterday,
+            status: AttendanceStatus.present,
+            siteId: 'site-1',
+          ),
+        ],
+      );
+      final materialRepo = FakeMaterialRepository(
+        initialMaterials: const [
+          sp.Material(
+            id: 'cement',
+            name: 'Cement',
+            unit: 'bags',
+            openingStock: 20,
+            currentStock: 10,
+            lowStockThreshold: 5,
+            siteId: 'site-1',
+          ),
+        ],
+        initialLogs: [
+          MaterialLog(
+            id: 'log-yesterday',
+            materialId: 'cement',
+            qtyUsed: 2,
+            remainingAfter: 10,
+            date: yesterday,
+            siteId: 'site-1',
+          ),
+        ],
+      );
+      final incidentRepo = FakeIncidentRepository(
+        initialIncidents: [
+          Incident(
+            id: 'incident-recent',
+            severity: Severity.minor,
+            description: 'A recent incident description',
+            occurredAt: now.subtract(const Duration(minutes: 30)),
+            siteId: 'site-1',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        buildScreen(
+          attendanceRepo: attendanceRepo,
+          materialRepo: materialRepo,
+          incidentRepo: incidentRepo,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text(DateFormat('d MMM').format(yesterday)), findsNWidgets(2));
+      expect(find.textContaining('00:00'), findsNothing);
+      expect(find.text('30 mins ago'), findsOneWidget);
     });
 
     testWidgets(

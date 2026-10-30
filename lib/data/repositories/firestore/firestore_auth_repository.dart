@@ -167,11 +167,6 @@ class FirestoreAuthRepository implements AuthRepository {
     }
   }
 
-  @override
-  void switchUser(String uid) {
-    // Real authentication is controlled by FirebaseAuth.
-  }
-
   bool _isNetworkError(Object error) {
     if (error is SocketException ||
         error is HttpException ||

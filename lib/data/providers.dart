@@ -24,15 +24,11 @@ final firestoreProvider = Provider<FirebaseFirestore>((ref) {
   return FirebaseFirestore.instance;
 });
 
-final realAuthRepositoryProvider = Provider<AuthRepository>((ref) {
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return FirestoreAuthRepository(
     auth: ref.watch(firebaseAuthProvider),
     firestore: ref.watch(firestoreProvider),
   );
-});
-
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return ref.watch(realAuthRepositoryProvider);
 });
 
 final siteRepositoryProvider = Provider<SiteRepository>((ref) {

@@ -11,27 +11,17 @@ final authStateProvider = StreamProvider<AppUser?>((ref) {
   return authRepo.watchCurrentUser();
 });
 
-typedef SignInFn = Future<AppUser> Function(String email, String password);
-
-final signInOverrideProvider = Provider<SignInFn?>((ref) => null);
-
 final authControllerProvider = Provider<AuthController>((ref) {
   final authRepo = ref.watch(authRepositoryProvider);
-  final signInOverride = ref.watch(signInOverrideProvider);
-  return AuthController(authRepo, signInOverride: signInOverride);
+  return AuthController(authRepo);
 });
 
 class AuthController {
   final repository.AuthRepository _authRepo;
-  final SignInFn? signInOverride;
 
-  AuthController(this._authRepo, {this.signInOverride});
+  AuthController(this._authRepo);
 
   Future<AppUser> signIn(String email, String password) async {
-    final overrideFn = signInOverride;
-    if (overrideFn != null) {
-      return overrideFn(email, password);
-    }
     try {
       return await _authRepo.signIn(email, password);
     } on repository.AuthFailure catch (error) {

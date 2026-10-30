@@ -3,7 +3,7 @@
 ## Run with the real Firebase backend
 
 ```powershell
-flutter run --dart-define=USE_FAKES=false
+flutter run
 ```
 
 ## Run with the Firebase emulators
@@ -26,12 +26,6 @@ Run the app in a third PowerShell terminal (Android emulator):
 
 ```powershell
 flutter run --dart-define=USE_EMULATOR=true
-```
-
-## Run with in-memory fakes
-
-```powershell
-flutter run --dart-define=USE_FAKES=true
 ```
 
 ## Test accounts

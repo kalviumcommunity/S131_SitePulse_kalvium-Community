@@ -7,9 +7,9 @@ import 'package:site_pulse/data/models/incident.dart';
 import 'package:site_pulse/data/models/material.dart' as sp;
 import 'package:site_pulse/data/models/site.dart';
 import 'package:site_pulse/data/models/worker.dart';
-import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/router.dart';
+import '../support/fakes/fakes.dart';
+import '../support/test_overrides.dart';
 
 Widget buildCompleteApp({
   required FakeAuthRepository authRepo,
@@ -27,14 +27,14 @@ Widget buildCompleteApp({
   );
 
   return ProviderScope(
-    overrides: [
-      authRepositoryProvider.overrideWithValue(authRepo),
-      if (siteRepo != null) siteRepositoryProvider.overrideWithValue(siteRepo),
-      if (workerRepo != null) workerRepositoryProvider.overrideWithValue(workerRepo),
-      if (attendanceRepo != null) attendanceRepositoryProvider.overrideWithValue(attendanceRepo),
-      if (materialRepo != null) materialRepositoryProvider.overrideWithValue(materialRepo),
-      if (incidentRepo != null) incidentRepositoryProvider.overrideWithValue(incidentRepo),
-    ],
+    overrides: fakeRepositoryOverrides(
+      authRepository: authRepo,
+      siteRepository: siteRepo,
+      workerRepository: workerRepo,
+      attendanceRepository: attendanceRepo,
+      materialRepository: materialRepo,
+      incidentRepository: incidentRepo,
+    ),
     child: MaterialApp.router(
       routerConfig: router,
     ),

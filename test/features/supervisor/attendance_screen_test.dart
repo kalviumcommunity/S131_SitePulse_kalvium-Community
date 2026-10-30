@@ -6,9 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/data/models/app_user.dart';
 import 'package:site_pulse/data/models/attendance_entry.dart';
 import 'package:site_pulse/data/models/worker.dart';
-import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/supervisor/attendance/attendance_screen.dart';
+import '../../support/fakes/fakes.dart';
+import '../../support/test_overrides.dart';
 
 class _CountingWorkerRepository extends FakeWorkerRepository {
   int watchWorkersCalls = 0;
@@ -51,15 +51,9 @@ void main() {
 
   Widget buildScreen({AppUser user = supUser}) {
     return ProviderScope(
-      overrides: [
-        authRepositoryProvider.overrideWithValue(
-          FakeAuthRepository(initialUser: user),
-        ),
-        workerRepositoryProvider.overrideWithValue(FakeWorkerRepository()),
-        attendanceRepositoryProvider.overrideWithValue(
-          FakeAttendanceRepository(),
-        ),
-      ],
+      overrides: fakeRepositoryOverrides(
+        authRepository: FakeAuthRepository(initialUser: user),
+      ),
       child: const MaterialApp(home: AttendanceScreen()),
     );
   }
@@ -72,13 +66,11 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            authRepositoryProvider.overrideWithValue(authRepository),
-            workerRepositoryProvider.overrideWithValue(workerRepository),
-            attendanceRepositoryProvider.overrideWithValue(
-              attendanceRepository,
-            ),
-          ],
+          overrides: fakeRepositoryOverrides(
+            authRepository: authRepository,
+            workerRepository: workerRepository,
+            attendanceRepository: attendanceRepository,
+          ),
           child: const MaterialApp(home: AttendanceScreen()),
         ),
       );

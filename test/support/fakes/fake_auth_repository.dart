@@ -54,7 +54,6 @@ class FakeAuthRepository implements AuthRepository {
     _userController.add(null);
   }
 
-  @override
   void switchUser(String uid) {
     if (_users.containsKey(uid)) {
       _currentUser = _users[uid];

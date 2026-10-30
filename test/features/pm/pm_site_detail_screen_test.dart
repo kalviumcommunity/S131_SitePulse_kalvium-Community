@@ -5,9 +5,9 @@ import 'package:site_pulse/data/models/app_user.dart';
 import 'package:site_pulse/data/models/attendance_entry.dart';
 import 'package:site_pulse/data/models/material_log.dart';
 import 'package:site_pulse/data/models/site.dart';
-import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/pm/site_detail/pm_site_detail_screen.dart';
+import '../../support/fakes/fakes.dart';
+import '../../support/test_overrides.dart';
 
 class _CustomMaterialLogsRepository extends FakeMaterialRepository {
   _CustomMaterialLogsRepository(this._logs);
@@ -100,14 +100,14 @@ Widget buildSiteDetailApp({
   final actualWorker = workerRepo ?? FakeWorkerRepository();
 
   return ProviderScope(
-    overrides: [
-      authRepositoryProvider.overrideWithValue(actualAuth),
-      siteRepositoryProvider.overrideWithValue(actualSite),
-      attendanceRepositoryProvider.overrideWithValue(actualAttendance),
-      materialRepositoryProvider.overrideWithValue(actualMaterial),
-      incidentRepositoryProvider.overrideWithValue(actualIncident),
-      workerRepositoryProvider.overrideWithValue(actualWorker),
-    ],
+    overrides: fakeRepositoryOverrides(
+      authRepository: actualAuth,
+      siteRepository: actualSite,
+      attendanceRepository: actualAttendance,
+      materialRepository: actualMaterial,
+      incidentRepository: actualIncident,
+      workerRepository: actualWorker,
+    ),
     child: MaterialApp(home: PmSiteDetailScreen(siteId: siteId)),
   );
 }

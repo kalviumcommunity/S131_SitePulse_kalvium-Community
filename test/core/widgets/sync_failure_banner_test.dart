@@ -5,11 +5,12 @@ import 'package:site_pulse/core/widgets/sync_failure_banner.dart';
 import 'package:site_pulse/data/models/app_user.dart';
 import 'package:site_pulse/data/models/write_failure.dart';
 import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fake_auth_repository.dart';
-import 'package:site_pulse/data/repositories/fakes/fake_sync_status_repository.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:site_pulse/data/repositories/write_failure_sink.dart';
 import 'package:site_pulse/features/auth/auth_controller.dart';
+import '../../support/fakes/fake_auth_repository.dart';
+import '../../support/fakes/fake_sync_status_repository.dart';
+import '../../support/test_overrides.dart';
 
 void main() {
   testWidgets('supervisor can see and clear durable write failures', (
@@ -25,10 +26,10 @@ void main() {
     final syncStatus = FakeSyncStatusRepository(failureSink: sink);
     final authRepository = FakeAuthRepository(initialUser: supervisor);
     final container = ProviderContainer(
-      overrides: [
-        authRepositoryProvider.overrideWithValue(authRepository),
-        syncStatusRepositoryProvider.overrideWithValue(syncStatus),
-      ],
+      overrides: fakeRepositoryOverrides(
+        authRepository: authRepository,
+        syncStatusRepository: syncStatus,
+      ),
     );
     addTearDown(container.dispose);
     addTearDown(syncStatus.dispose);

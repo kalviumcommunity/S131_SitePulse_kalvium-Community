@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/data/models/app_user.dart';
-import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fake_auth_repository.dart';
 import 'package:site_pulse/router.dart';
+import 'support/fakes/fake_auth_repository.dart';
+import 'support/test_overrides.dart';
 
 Widget createRouterTestApp({
   required FakeAuthRepository fakeAuthRepo,
@@ -18,9 +18,7 @@ Widget createRouterTestApp({
   );
 
   return ProviderScope(
-    overrides: [
-      authRepositoryProvider.overrideWithValue(fakeAuthRepo),
-    ],
+    overrides: fakeRepositoryOverrides(authRepository: fakeAuthRepo),
     child: MaterialApp.router(
       theme: buildTheme(),
       routerConfig: router,

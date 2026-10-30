@@ -3,16 +3,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/data/models/app_user.dart';
-import 'package:site_pulse/features/auth/auth_controller.dart';
-import 'package:site_pulse/features/auth/auth_failure.dart';
+import 'package:site_pulse/data/repositories/auth_repository.dart' as repository;
 import 'package:site_pulse/features/auth/login_screen.dart';
+import '../../support/fakes/fake_auth_repository.dart';
+import '../../support/test_overrides.dart';
 
-Widget createTestWidget({SignInFn? signInOverride}) {
+class _LoginAuthRepository extends FakeAuthRepository {
+  _LoginAuthRepository({this.failure, this.delaySignIn = false});
+
+  final repository.AuthFailure? failure;
+  final bool delaySignIn;
+
+  @override
+  Future<AppUser> signIn(String email, String password) async {
+    if (delaySignIn) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+    if (failure case final failure?) {
+      throw failure;
+    }
+    return super.signIn(email, password);
+  }
+}
+
+Widget createTestWidget({
+  repository.AuthFailure? failure,
+  bool delaySignIn = false,
+}) {
   return ProviderScope(
-    overrides: [
-      if (signInOverride != null)
-        signInOverrideProvider.overrideWithValue(signInOverride),
-    ],
+    overrides: fakeRepositoryOverrides(
+      authRepository: _LoginAuthRepository(
+        failure: failure,
+        delaySignIn: delaySignIn,
+      ),
+    ),
     child: MaterialApp(
       theme: buildTheme(),
       home: const LoginScreen(),
@@ -71,8 +95,10 @@ void main() {
   group('LoginScreen Error Mapping Tests', () {
     testWidgets('displays inline error for invalidCredentials', (tester) async {
       await tester.pumpWidget(createTestWidget(
-        signInOverride: (email, password) =>
-            throw const AuthFailure(AuthFailureCode.invalidCredentials),
+        failure: const repository.AuthFailure(
+          code: repository.AuthFailureCode.invalidCredentials,
+          message: 'Invalid credentials',
+        ),
       ));
 
       await tester.enterText(find.byKey(const Key('email_field')), 'user@sitepulse.test');
@@ -85,8 +111,10 @@ void main() {
 
     testWidgets('displays inline error for noNetwork', (tester) async {
       await tester.pumpWidget(createTestWidget(
-        signInOverride: (email, password) =>
-            throw const AuthFailure(AuthFailureCode.noNetwork),
+        failure: const repository.AuthFailure(
+          code: repository.AuthFailureCode.noNetwork,
+          message: 'No network',
+        ),
       ));
 
       await tester.enterText(find.byKey(const Key('email_field')), 'user@sitepulse.test');
@@ -99,8 +127,10 @@ void main() {
 
     testWidgets('displays inline error for accountNotSetUp', (tester) async {
       await tester.pumpWidget(createTestWidget(
-        signInOverride: (email, password) =>
-            throw const AuthFailure(AuthFailureCode.accountNotSetUp),
+        failure: const repository.AuthFailure(
+          code: repository.AuthFailureCode.accountNotSetUp,
+          message: 'Account not set up',
+        ),
       ));
 
       await tester.enterText(find.byKey(const Key('email_field')), 'unknown@sitepulse.test');
@@ -113,8 +143,10 @@ void main() {
 
     testWidgets('displays inline error for unknown failure', (tester) async {
       await tester.pumpWidget(createTestWidget(
-        signInOverride: (email, password) =>
-            throw const AuthFailure(AuthFailureCode.unknown),
+        failure: const repository.AuthFailure(
+          code: repository.AuthFailureCode.unknown,
+          message: 'Unknown error',
+        ),
       ));
 
       await tester.enterText(find.byKey(const Key('email_field')), 'user@sitepulse.test');
@@ -127,15 +159,7 @@ void main() {
 
     testWidgets('shows loading indicator while signing in', (tester) async {
       await tester.pumpWidget(createTestWidget(
-        signInOverride: (email, password) async {
-          await Future<void>.delayed(const Duration(milliseconds: 500));
-          return const AppUser(
-            uid: 'user-sup-1',
-            role: UserRole.supervisor,
-            name: 'Suresh Kumar',
-            siteId: 'site-1',
-          );
-        },
+        delaySignIn: true,
       ));
 
       await tester.enterText(find.byKey(const Key('email_field')), 'sup1@sitepulse.test');

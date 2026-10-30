@@ -1,32 +1,46 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
 import 'package:site_pulse/data/models/models.dart';
 import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/data/repositories/repositories.dart';
+import '../../support/fakes/fakes.dart';
+import '../../support/test_overrides.dart';
 
 void main() {
   group('Fake Repositories & Riverpod Providers', () {
-    test('Riverpod container successfully provides all repositories', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    testWidgets('Riverpod provides all fake repositories', (tester) async {
+      late AuthRepository authRepository;
+      late SiteRepository siteRepository;
+      late WorkerRepository workerRepository;
+      late AttendanceRepository attendanceRepository;
+      late MaterialRepository materialRepository;
+      late IncidentRepository incidentRepository;
 
-      expect(container.read(authRepositoryProvider), isA<AuthRepository>());
-      expect(container.read(siteRepositoryProvider), isA<SiteRepository>());
-      expect(container.read(workerRepositoryProvider), isA<WorkerRepository>());
-      expect(
-        container.read(attendanceRepositoryProvider),
-        isA<AttendanceRepository>(),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: fakeRepositoryOverrides(),
+          child: Consumer(
+            builder: (context, ref, child) {
+              authRepository = ref.watch(authRepositoryProvider);
+              siteRepository = ref.watch(siteRepositoryProvider);
+              workerRepository = ref.watch(workerRepositoryProvider);
+              attendanceRepository = ref.watch(attendanceRepositoryProvider);
+              materialRepository = ref.watch(materialRepositoryProvider);
+              incidentRepository = ref.watch(incidentRepositoryProvider);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
       );
-      expect(
-        container.read(materialRepositoryProvider),
-        isA<MaterialRepository>(),
-      );
-      expect(
-        container.read(incidentRepositoryProvider),
-        isA<IncidentRepository>(),
-      );
+
+      expect(authRepository, isA<AuthRepository>());
+      expect(siteRepository, isA<SiteRepository>());
+      expect(workerRepository, isA<WorkerRepository>());
+      expect(attendanceRepository, isA<AttendanceRepository>());
+      expect(materialRepository, isA<MaterialRepository>());
+      expect(incidentRepository, isA<IncidentRepository>());
     });
 
     test('SiteRepository is seeded with 3 sites', () async {

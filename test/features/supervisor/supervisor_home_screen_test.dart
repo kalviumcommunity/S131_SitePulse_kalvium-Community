@@ -11,9 +11,9 @@ import 'package:site_pulse/data/models/incident.dart';
 import 'package:site_pulse/data/models/material.dart' as sp;
 import 'package:site_pulse/data/models/material_log.dart';
 import 'package:site_pulse/data/models/site.dart';
-import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/supervisor/home/supervisor_home_screen.dart';
+import '../../support/fakes/fakes.dart';
+import '../../support/test_overrides.dart';
 
 class _TrackingAttendanceRepository extends FakeAttendanceRepository {
   _TrackingAttendanceRepository({super.initialAttendance});
@@ -107,16 +107,13 @@ Widget buildScreen({
   );
 
   return ProviderScope(
-    overrides: [
-      authRepositoryProvider.overrideWithValue(actualAuth),
-      siteRepositoryProvider.overrideWithValue(actualSite),
-      if (attendanceRepo != null)
-        attendanceRepositoryProvider.overrideWithValue(attendanceRepo),
-      if (materialRepo != null)
-        materialRepositoryProvider.overrideWithValue(materialRepo),
-      if (incidentRepo != null)
-        incidentRepositoryProvider.overrideWithValue(incidentRepo),
-    ],
+    overrides: fakeRepositoryOverrides(
+      authRepository: actualAuth,
+      siteRepository: actualSite,
+      attendanceRepository: attendanceRepo,
+      materialRepository: materialRepo,
+      incidentRepository: incidentRepo,
+    ),
     child: MaterialApp.router(routerConfig: router),
   );
 }

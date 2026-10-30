@@ -3,16 +3,12 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:site_pulse/data/models/incident.dart';
-import 'package:site_pulse/data/models/site.dart';
-import 'package:site_pulse/data/repositories/firestore/firestore_multi_site_repository.dart';
+import 'package:site_pulse/data/repositories/firestore_site_repository.dart';
 import 'package:site_pulse/data/repositories/incident_repository.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:uuid/uuid.dart';
 
-/// Real Firestore-backed [IncidentRepository].
-///
-/// Incidents are immutable client-created records under
-/// `sites/{siteId}/incidents`.
+/// Incidents are immutable so the original event record remains unchanged.
 class FirestoreIncidentRepository implements IncidentRepository {
   FirestoreIncidentRepository({
     FirebaseFirestore? firestore,
@@ -107,88 +103,6 @@ class FirestoreIncidentRepository implements IncidentRepository {
               )
               .toList(),
         );
-  }
-
-  @override
-  Stream<Incident?> watchIncident(String id) {
-    late final StreamController<Incident?> controller;
-    StreamSubscription<List<Site>>? sitesSubscription;
-    final subscriptions =
-        <String, StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>>{};
-    final incidents = <String, Incident>{};
-    var cancelled = false;
-
-    void emit() {
-      if (cancelled || controller.isClosed) return;
-      Incident? result;
-      for (final incident in incidents.values) {
-        if (result == null || incident.occurredAt.isAfter(result.occurredAt)) {
-          result = incident;
-        }
-      }
-      controller.add(result);
-    }
-
-    controller = StreamController<Incident?>(
-      onListen: () {
-        sitesSubscription = watchAllSites(_db).listen((sites) {
-          if (cancelled) return;
-          final siteIds = sites.map((site) => site.id).toSet();
-          for (final siteId in subscriptions.keys.toList()) {
-            if (!siteIds.contains(siteId)) {
-              unawaited(subscriptions.remove(siteId)!.cancel());
-              incidents.remove(siteId);
-            }
-          }
-          for (final site in sites) {
-            if (subscriptions.containsKey(site.id)) continue;
-            subscriptions[site.id] = _incidentsCol(site.id)
-                .doc(id)
-                .snapshots(includeMetadataChanges: true)
-                .listen((snapshot) {
-                  if (cancelled) return;
-                  if (!snapshot.exists) {
-                    incidents.remove(site.id);
-                  } else {
-                    incidents[site.id] = _incidentFromSnapshot(
-                      site.id,
-                      snapshot,
-                    );
-                  }
-                  emit();
-                }, onError: controller.addError);
-          }
-          emit();
-        }, onError: controller.addError);
-      },
-      onCancel: () async {
-        cancelled = true;
-        final activeSubscriptions = subscriptions.values.toList();
-        subscriptions.clear();
-        await Future.wait([
-          if (sitesSubscription != null) sitesSubscription!.cancel(),
-          for (final subscription in activeSubscriptions) subscription.cancel(),
-        ]);
-      },
-    );
-    return controller.stream;
-  }
-
-  Incident _incidentFromSnapshot(
-    String siteId,
-    DocumentSnapshot<Map<String, dynamic>> snapshot,
-  ) {
-    final data = snapshot.data()!;
-    return Incident(
-      id: snapshot.id,
-      severity: Severity.fromString(data['severity'] as String? ?? ''),
-      description: data['description'] as String? ?? '',
-      occurredAt:
-          (data['occurredAt'] as Timestamp?)?.toDate() ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-      siteId: siteId,
-      hasPendingWrites: snapshot.metadata.hasPendingWrites,
-    );
   }
 
   @override

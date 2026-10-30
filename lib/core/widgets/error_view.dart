@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 
-/// Error state widget displaying an error message and an optional retry action.
 class ErrorView extends StatelessWidget {
-  const ErrorView({
-    super.key,
-    required this.message,
-    this.onRetry,
-  });
+  const ErrorView({super.key, required this.message, this.onRetry});
 
   final String message;
   final VoidCallback? onRetry;
@@ -30,9 +25,9 @@ class ErrorView extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.critical,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: AppColors.critical,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 20),

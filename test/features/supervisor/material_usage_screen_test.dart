@@ -6,9 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
 import 'package:site_pulse/data/models/material.dart' as sp;
 import 'package:site_pulse/data/models/material_log.dart';
-import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/supervisor/material/material_usage_screen.dart';
+
+import '../../support/fakes/fakes.dart';
+import '../../support/test_overrides.dart';
 
 class _TrackingMaterialRepository extends FakeMaterialRepository {
   _TrackingMaterialRepository({super.initialMaterials});
@@ -60,11 +61,7 @@ class _TrackingMaterialRepository extends FakeMaterialRepository {
 
 Widget buildScreen({FakeMaterialRepository? repository}) {
   return ProviderScope(
-    overrides: [
-      materialRepositoryProvider.overrideWithValue(
-        repository ?? FakeMaterialRepository(),
-      ),
-    ],
+    overrides: fakeRepositoryOverrides(materialRepository: repository),
     child: const MaterialApp(home: MaterialUsageScreen()),
   );
 }

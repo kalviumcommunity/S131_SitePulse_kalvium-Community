@@ -26,8 +26,6 @@ enum Severity {
   }
 }
 
-typedef IncidentSeverity = Severity;
-
 class Incident {
   final String id;
   final Severity severity;
@@ -86,8 +84,7 @@ class Incident {
       description: map['description'] as String? ?? '',
       occurredAt: _parseDateTime(map['occurredAt']) ?? DateTime.now(),
       siteId: map['siteId'] as String?,
-      hasPendingWrites:
-          (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
+      hasPendingWrites: (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
     );
   }
 
@@ -105,13 +102,13 @@ class Incident {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        severity,
-        description,
-        occurredAt.toIso8601String(),
-        siteId,
-        hasPendingWrites,
-      );
+    id,
+    severity,
+    description,
+    occurredAt.toIso8601String(),
+    siteId,
+    hasPendingWrites,
+  );
 
   @override
   String toString() =>

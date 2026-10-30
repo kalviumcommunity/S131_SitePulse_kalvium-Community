@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/data/models/incident.dart';
 
-/// Four-choice selector for incident severity: Minor, Moderate, High, Critical.
-/// Colour-coded with distinct icons, meeting the accessibility rule (never color alone).
-/// Minimum tap height is 48dp.
 class SeveritySelector extends StatelessWidget {
   const SeveritySelector({
     super.key,
@@ -77,12 +74,19 @@ class SeveritySelector extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: isSelected ? color : color.withValues(alpha: 0.08),
+                        color: isSelected
+                            ? color
+                            : color.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: isSelected ? color : color.withValues(alpha: 0.4),
+                          color: isSelected
+                              ? color
+                              : color.withValues(alpha: 0.4),
                           width: isSelected ? 2 : 1,
                         ),
                       ),
@@ -99,7 +103,9 @@ class SeveritySelector extends StatelessWidget {
                             label,
                             style: TextStyle(
                               fontSize: 11,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
                               color: isSelected ? Colors.white : color,
                             ),
                             maxLines: 1,

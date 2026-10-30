@@ -6,17 +6,20 @@ import 'package:site_pulse/data/models/material.dart';
 void main() {
   group('thresholds', () {
     group('isLowStock', () {
-      test('returns true when currentStock is strictly less than threshold', () {
-        const material = Material(
-          id: 'mat-1',
-          name: 'Cement',
-          unit: 'bags',
-          openingStock: 100,
-          currentStock: 15,
-          lowStockThreshold: 25,
-        );
-        expect(isLowStock(material), isTrue);
-      });
+      test(
+        'returns true when currentStock is strictly less than threshold',
+        () {
+          const material = Material(
+            id: 'mat-1',
+            name: 'Cement',
+            unit: 'bags',
+            openingStock: 100,
+            currentStock: 15,
+            lowStockThreshold: 25,
+          );
+          expect(isLowStock(material), isTrue);
+        },
+      );
 
       test('returns true when currentStock equals lowStockThreshold (<=)', () {
         const material = Material(

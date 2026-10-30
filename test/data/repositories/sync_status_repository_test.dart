@@ -5,8 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:site_pulse/data/models/write_failure.dart';
 import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fake_sync_status_repository.dart';
-import 'package:site_pulse/data/repositories/repositories.dart';
+import 'package:site_pulse/data/repositories/firestore_sync_status_repository.dart';
+import 'package:site_pulse/data/repositories/repository_error.dart';
+import 'package:site_pulse/data/repositories/write_failure_sink.dart';
+
+import '../../support/fakes/fakes.dart';
+import '../../support/test_overrides.dart';
 
 class _MockFirebaseFirestore extends Mock implements FirebaseFirestore {}
 
@@ -135,16 +139,33 @@ void main() {
   test('provider forwards repository failures into sync status', () async {
     writeFailureSink.clear();
     addTearDown(writeFailureSink.clear);
-    final container = ProviderContainer();
+    final syncStatus = FakeSyncStatusRepository(failureSink: writeFailureSink);
+    final container = ProviderContainer(
+      overrides: fakeRepositoryOverrides(syncStatusRepository: syncStatus),
+    );
     addTearDown(container.dispose);
 
-    final syncStatus = container.read(syncStatusRepositoryProvider);
     final materialRepository = container.read(materialRepositoryProvider);
+    final disposals = <void Function()>[];
+    forwardRepositoryFailures(
+      errorStream: materialRepository.errorStream,
+      collection: 'materialLogs',
+      onDispose: disposals.add,
+      collectionForError: (error) =>
+          error.operation == 'saveMaterial' ? 'materials' : 'materialLogs',
+    );
+    addTearDown(() {
+      for (final dispose in disposals) {
+        dispose();
+      }
+      syncStatus.dispose();
+    });
     materialRepository.logUsage(materialId: 'missing-material', qtyUsed: 1);
 
-    final failures = await syncStatus.writeFailures.firstWhere(
-      (items) => items.isNotEmpty,
-    );
+    final failures = await container
+        .read(syncStatusRepositoryProvider)
+        .writeFailures
+        .firstWhere((items) => items.isNotEmpty);
     final failure = failures.single;
     expect(failure.collection, 'materialLogs');
     expect(failure.documentId, isNotEmpty);

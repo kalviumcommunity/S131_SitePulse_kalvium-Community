@@ -5,9 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/data/models/worker.dart';
 import 'package:site_pulse/data/models/app_user.dart';
-import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/supervisor/roster/roster_screen.dart';
+
+import '../../support/fakes/fakes.dart';
+import '../../support/test_overrides.dart';
 
 class _CountingWorkerRepository extends FakeWorkerRepository {
   int watchWorkersCalls = 0;
@@ -40,10 +41,10 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          authRepositoryProvider.overrideWithValue(authRepository),
-          workerRepositoryProvider.overrideWithValue(workerRepository),
-        ],
+        overrides: fakeRepositoryOverrides(
+          authRepository: authRepository,
+          workerRepository: workerRepository,
+        ),
         child: const MaterialApp(home: RosterScreen()),
       ),
     );
@@ -78,10 +79,10 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          authRepositoryProvider.overrideWithValue(authRepository),
-          workerRepositoryProvider.overrideWithValue(workerRepository),
-        ],
+        overrides: fakeRepositoryOverrides(
+          authRepository: authRepository,
+          workerRepository: workerRepository,
+        ),
         child: const MaterialApp(home: RosterScreen()),
       ),
     );

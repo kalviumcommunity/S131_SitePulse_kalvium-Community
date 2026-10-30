@@ -7,7 +7,6 @@ import 'package:site_pulse/data/repositories/repository_error.dart';
 
 class FakeMaterialRepository implements MaterialRepository {
   static List<Material> get defaultMaterials => [
-    // One below threshold: currentStock 15 <= lowStockThreshold 25
     const Material(
       id: 'mat-1',
       name: 'Portland Cement (50kg)',
@@ -121,22 +120,6 @@ class FakeMaterialRepository implements MaterialRepository {
       if (endDate != null && log.date.isAfter(endDate)) return false;
       return true;
     }).toList();
-  }
-
-  @override
-  String saveMaterial(Material material) {
-    if (material.id.isEmpty) {
-      _errorController.add(
-        const RepositoryError(
-          operation: 'saveMaterial',
-          message: 'Material id cannot be empty',
-        ),
-      );
-      return '';
-    }
-    _materials[_materialKey(material.siteId, material.id)] = material;
-    _materialChangeController.add(null);
-    return material.id;
   }
 
   @override

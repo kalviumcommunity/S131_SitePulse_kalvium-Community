@@ -1,9 +1,4 @@
-enum AuthFailureCode {
-  invalidCredentials,
-  noNetwork,
-  accountNotSetUp,
-  unknown;
-}
+enum AuthFailureCode { invalidCredentials, noNetwork, accountNotSetUp, unknown }
 
 class AuthFailure implements Exception {
   final AuthFailureCode code;

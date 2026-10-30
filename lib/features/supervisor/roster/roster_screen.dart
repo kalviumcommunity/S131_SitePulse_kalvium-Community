@@ -110,7 +110,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         siteId: siteId,
         existingActiveWorkers: activeWorkers,
         onSave: (worker) {
-          // Never await write!
+          // Do not await so Firestore can queue writes while offline.
           final workerRepo = ref.read(workerRepositoryProvider);
           workerRepo.saveWorker(siteId, worker);
           ScaffoldMessenger.of(
@@ -144,7 +144,6 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
             style: FilledButton.styleFrom(backgroundColor: AppColors.critical),
             onPressed: () {
               Navigator.of(dialogCtx).pop();
-              // Never await write!
               final workerRepo = ref.read(workerRepositoryProvider);
               workerRepo.toggleWorkerActive(siteId, worker.id, false);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -180,9 +179,7 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
         icon: const Icon(Icons.person_add),
         label: const Text('Add Worker'),
       ),
-      body: AppPageBackground(
-        child: _buildBody(context, siteId),
-      ),
+      body: AppPageBackground(child: _buildBody(context, siteId)),
     );
   }
 
@@ -223,7 +220,6 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
 
     return Column(
       children: [
-        // Header with count & Search Box
         Container(
           padding: const EdgeInsets.all(16.0),
           color: Theme.of(context).colorScheme.surfaceContainerHighest
@@ -284,7 +280,6 @@ class _RosterScreenState extends ConsumerState<RosterScreen> {
           ),
         ),
 
-        // Worker List
         Expanded(
           child: filteredWorkers.isEmpty
               ? Center(

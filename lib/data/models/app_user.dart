@@ -10,8 +10,6 @@ enum UserRole {
   }
 }
 
-typedef AppUserRole = UserRole;
-
 class AppUser {
   final String uid;
   final UserRole role;
@@ -68,8 +66,7 @@ class AppUser {
           : (map['role'] as UserRole? ?? UserRole.supervisor),
       name: map['name'] as String? ?? '',
       siteId: map['siteId'] as String?,
-      hasPendingWrites:
-          (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
+      hasPendingWrites: (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
     );
   }
 

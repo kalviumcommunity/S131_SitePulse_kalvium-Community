@@ -10,9 +10,10 @@ import 'package:site_pulse/data/models/incident.dart';
 import 'package:site_pulse/data/models/material.dart' as sp;
 import 'package:site_pulse/data/models/site.dart';
 import 'package:site_pulse/data/models/worker.dart';
-import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/pm/dashboard/pm_dashboard_screen.dart';
+
+import '../../support/fakes/fakes.dart';
+import '../../support/test_overrides.dart';
 
 class _TrackingMaterialRepository extends FakeMaterialRepository {
   final List<String?> siteIds = [];
@@ -126,14 +127,14 @@ Widget buildDashboardApp({
   );
 
   return ProviderScope(
-    overrides: [
-      authRepositoryProvider.overrideWithValue(actualAuth),
-      siteRepositoryProvider.overrideWithValue(actualSite),
-      materialRepositoryProvider.overrideWithValue(actualMaterial),
-      incidentRepositoryProvider.overrideWithValue(actualIncident),
-      attendanceRepositoryProvider.overrideWithValue(actualAttendance),
-      workerRepositoryProvider.overrideWithValue(actualWorker),
-    ],
+    overrides: fakeRepositoryOverrides(
+      authRepository: actualAuth,
+      siteRepository: actualSite,
+      materialRepository: actualMaterial,
+      incidentRepository: actualIncident,
+      attendanceRepository: actualAttendance,
+      workerRepository: actualWorker,
+    ),
     child: MaterialApp.router(routerConfig: router),
   );
 }

@@ -2,6 +2,61 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:site_pulse/data/models/site.dart';
+import 'package:site_pulse/data/repositories/repository_error.dart';
+import 'package:site_pulse/data/repositories/site_repository.dart';
+
+class FirestoreSiteRepository implements SiteRepository {
+  FirestoreSiteRepository({
+    FirebaseFirestore? firestore,
+    this._watchSitesLimit = 50,
+  }) : _db = firestore ?? FirebaseFirestore.instance;
+
+  final FirebaseFirestore _db;
+  final int _watchSitesLimit;
+
+  final StreamController<RepositoryError> _errorController =
+      StreamController<RepositoryError>.broadcast();
+
+  CollectionReference<Map<String, dynamic>> get _sitesCol =>
+      _db.collection('sites');
+
+  @override
+  Stream<List<Site>> watchSites() {
+    return _sitesCol
+        .limit(_watchSitesLimit)
+        .snapshots(includeMetadataChanges: true)
+        .map(
+          (snap) => snap.docs.map((doc) {
+            return Site.fromFirestore(
+              doc.id,
+              doc.data(),
+              hasPendingWrites: doc.metadata.hasPendingWrites,
+            );
+          }).toList(),
+        );
+  }
+
+  @override
+  Stream<Site?> watchSite(String siteId) {
+    return _sitesCol.doc(siteId).snapshots(includeMetadataChanges: true).map((
+      doc,
+    ) {
+      if (!doc.exists) return null;
+      return Site.fromFirestore(
+        doc.id,
+        doc.data()!,
+        hasPendingWrites: doc.metadata.hasPendingWrites,
+      );
+    });
+  }
+
+  @override
+  Stream<RepositoryError> get errorStream => _errorController.stream;
+
+  void dispose() {
+    _errorController.close();
+  }
+}
 
 Stream<List<Site>> watchAllSites(FirebaseFirestore firestore) {
   return firestore

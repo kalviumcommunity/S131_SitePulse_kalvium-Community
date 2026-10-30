@@ -1,26 +1,27 @@
 import 'dart:async';
+
 import 'package:site_pulse/data/models/site.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:site_pulse/data/repositories/site_repository.dart';
 
 class FakeSiteRepository implements SiteRepository {
   static List<Site> get defaultSites => [
-        Site(
-          id: 'site-1',
-          name: 'Downtown Heights',
-          lastEntryAt: DateTime.now().subtract(const Duration(hours: 1)),
-        ),
-        Site(
-          id: 'site-2',
-          name: 'Westside Commercial Hub',
-          lastEntryAt: DateTime.now().subtract(const Duration(hours: 4)),
-        ),
-        Site(
-          id: 'site-3',
-          name: 'Harbor Bridge Expansion',
-          lastEntryAt: DateTime.now().subtract(const Duration(days: 1)),
-        ),
-      ];
+    Site(
+      id: 'site-1',
+      name: 'Downtown Heights',
+      lastEntryAt: DateTime.now().subtract(const Duration(hours: 1)),
+    ),
+    Site(
+      id: 'site-2',
+      name: 'Westside Commercial Hub',
+      lastEntryAt: DateTime.now().subtract(const Duration(hours: 4)),
+    ),
+    Site(
+      id: 'site-3',
+      name: 'Harbor Bridge Expansion',
+      lastEntryAt: DateTime.now().subtract(const Duration(days: 1)),
+    ),
+  ];
 
   final Map<String, Site> _sites = {};
   final StreamController<List<Site>> _sitesController =

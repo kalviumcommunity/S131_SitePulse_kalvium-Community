@@ -62,57 +62,46 @@ class SupervisorProfileScreen extends ConsumerWidget {
     final workersAsync = ref.watch(_supervisorProfileWorkersProvider(siteId));
 
     return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Card(
-                    child: Column(
-                      children: [
-                        _ProfileValue(label: 'Name', value: user.name),
-                        _ProfileValue(label: 'Role', value: user.role.name),
-                        _ProfileValue(
-                          label: 'Email',
-                          value: user.email ?? 'Unavailable',
-                        ),
-                        _ProfileValue(
-                          label: 'User ID',
-                          value: user.uid,
-                          muted: true,
-                        ),
-                        _ProfileAsyncValue<Site?>(
-                          label: 'Site',
-                          value: siteAsync,
-                          display: (site) => site?.name ?? 'Unknown site',
-                        ),
-                        _ProfileValue(
-                          label: 'Site ID',
-                          value: siteId,
-                          muted: true,
-                        ),
-                        _ProfileAsyncValue<Site?>(
-                          label: 'Last entry',
-                          value: siteAsync,
-                          display: _formatLastEntry,
-                        ),
-                        _ProfileAsyncValue<List<Worker>>(
-                          label: 'Active workers',
-                          value: workersAsync,
-                          display: (workers) => '${workers.length}',
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    key: const Key('profile_logout_button'),
-                    onPressed: () => showLogoutConfirmation(
-                      context,
-                      () => ref.read(authControllerProvider).signOut(),
-                    ),
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Logout'),
-                  ),
-                ],
-              );
+      padding: const EdgeInsets.all(16),
+      children: [
+        Card(
+          child: Column(
+            children: [
+              _ProfileValue(label: 'Name', value: user.name),
+              _ProfileValue(label: 'Role', value: user.role.name),
+              _ProfileValue(label: 'Email', value: user.email ?? 'Unavailable'),
+              _ProfileValue(label: 'User ID', value: user.uid, muted: true),
+              _ProfileAsyncValue<Site?>(
+                label: 'Site',
+                value: siteAsync,
+                display: (site) => site?.name ?? 'Unknown site',
+              ),
+              _ProfileValue(label: 'Site ID', value: siteId, muted: true),
+              _ProfileAsyncValue<Site?>(
+                label: 'Last entry',
+                value: siteAsync,
+                display: _formatLastEntry,
+              ),
+              _ProfileAsyncValue<List<Worker>>(
+                label: 'Active workers',
+                value: workersAsync,
+                display: (workers) => '${workers.length}',
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          key: const Key('profile_logout_button'),
+          onPressed: () => showLogoutConfirmation(
+            context,
+            () => ref.read(authControllerProvider).signOut(),
+          ),
+          icon: const Icon(Icons.logout),
+          label: const Text('Logout'),
+        ),
+      ],
+    );
   }
 
   String _formatLastEntry(Site? site) {
@@ -162,14 +151,10 @@ class _ProfileAsyncValue<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return value.when(
-      loading: () => ListTile(
-        title: Text(label),
-        subtitle: const Text('Loading…'),
-      ),
-      error: (error, _) => ListTile(
-        title: Text(label),
-        subtitle: Text('Unavailable: $error'),
-      ),
+      loading: () =>
+          ListTile(title: Text(label), subtitle: const Text('Loading…')),
+      error: (error, _) =>
+          ListTile(title: Text(label), subtitle: Text('Unavailable: $error')),
       data: (data) => _ProfileValue(label: label, value: display(data)),
     );
   }

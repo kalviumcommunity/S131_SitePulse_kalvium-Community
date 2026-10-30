@@ -17,10 +17,6 @@ import 'package:site_pulse/data/models/site.dart';
 import 'package:site_pulse/data/providers.dart';
 import 'package:site_pulse/features/auth/auth_controller.dart';
 
-// ---------------------------------------------------------------------------
-// Activity Feed Data Types & Providers
-// ---------------------------------------------------------------------------
-
 enum ActivityType { attendance, material, incident }
 
 class ActivityItem {
@@ -127,7 +123,6 @@ final supervisorActivityProvider = Provider.autoDispose
       };
       final List<ActivityItem> items = [];
 
-      // Group attendance records by day
       final attendanceByDate = <String, List<AttendanceEntry>>{};
       for (final a in attendance) {
         final dStr = '${a.date.year}-${a.date.month}-${a.date.day}';
@@ -157,7 +152,6 @@ final supervisorActivityProvider = Provider.autoDispose
         );
       }
 
-      // Material logs
       for (final log in logs) {
         final materialKey = '${log.siteId ?? siteId}::${log.materialId}';
         final matName = materialMap[materialKey]?.name ?? 'Material';
@@ -175,7 +169,6 @@ final supervisorActivityProvider = Provider.autoDispose
         );
       }
 
-      // Incidents
       for (final inc in incidents) {
         items.add(
           ActivityItem(
@@ -189,14 +182,9 @@ final supervisorActivityProvider = Provider.autoDispose
         );
       }
 
-      // Sort descending by timestamp and limit to 10
       items.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       return AsyncValue.data(items.take(10).toList());
     });
-
-// ---------------------------------------------------------------------------
-// Screen
-// ---------------------------------------------------------------------------
 
 class SupervisorHomeScreen extends ConsumerWidget {
   const SupervisorHomeScreen({super.key});
@@ -286,231 +274,230 @@ class SupervisorHomeScreen extends ConsumerWidget {
       ),
       body: AppPageBackground(
         child: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(_supervisorSiteProvider(siteId));
-          ref.invalidate(_siteAttendanceProvider(siteId));
-          ref.invalidate(_materialLogsProvider(siteId));
-          ref.invalidate(_materialsProvider(siteId));
-          ref.invalidate(_siteIncidentsProvider(siteId));
-          await Future<void>.delayed(const Duration(milliseconds: 600));
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Supervisor Header & Site Info Card ───────────────────
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: InkWell(
-                  key: const Key('supervisor_profile_card'),
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () => context.go('/supervisor/profile'),
-                  child: Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundColor: AppColors.primary.withValues(
-                                  alpha: 0.12,
-                                ),
-                                child: const Icon(
-                                  Icons.person,
-                                  color: AppColors.primary,
-                                  size: 28,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  user?.name ?? 'Supervisor',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 24),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.location_on,
-                                size: 20,
-                                color: AppColors.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: siteAsync.when(
-                                  loading: () => const Text(
-                                    'Loading site…',
-                                    style: TextStyle(fontWeight: FontWeight.w600),
-                                  ),
-                                  error: (_, _) => Text(
-                                    'Site: $siteId',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  data: (site) => Text(
-                                    site != null
-                                        ? site.name
-                                        : 'Site: $siteId',
-                                    key: const Key('site_name_header'),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // ── Quick Actions ─────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text(
-                  'Daily Actions',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  children: [
-                    _ActionCard(
-                      key: const Key('action_attendance'),
-                      icon: Icons.how_to_reg,
-                      iconColor: AppColors.primary,
-                      title: 'Mark Attendance',
-                      subtitle: 'Record daily presence for site crew',
-                      onTap: () => context.push('/supervisor/attendance'),
-                    ),
-                    const SizedBox(height: 12),
-                    _ActionCard(
-                      key: const Key('action_material'),
-                      icon: Icons.inventory_2,
-                      iconColor: Color(0xFFB45309),
-                      title: 'Log Material Usage',
-                      subtitle: 'Record material consumption and track stock',
-                      onTap: () => context.push('/supervisor/material'),
-                    ),
-                    const SizedBox(height: 12),
-                    _ActionCard(
-                      key: const Key('action_incident'),
-                      icon: Icons.warning_amber_rounded,
-                      iconColor: AppColors.critical,
-                      title: 'Report Incident',
-                      subtitle: 'Log hazards, safety events, and escalations',
-                      onTap: () => context.push('/supervisor/incident'),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-              const Divider(thickness: 8, height: 24),
-
-              // ── Recent Activity Feed ──────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  children: [
-                    Text(
-                      'Recent Activity Feed',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      'Latest 10 items',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              activityAsync.when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: LoadingView(message: 'Loading activity feed…'),
-                ),
-                error: (e, _) => Padding(
+          onRefresh: () async {
+            ref.invalidate(_supervisorSiteProvider(siteId));
+            ref.invalidate(_siteAttendanceProvider(siteId));
+            ref.invalidate(_materialLogsProvider(siteId));
+            ref.invalidate(_materialsProvider(siteId));
+            ref.invalidate(_siteIncidentsProvider(siteId));
+            await Future<void>.delayed(const Duration(milliseconds: 600));
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: ErrorView(
-                    message: 'Failed to load activity: $e',
-                    onRetry: () {
-                      ref.invalidate(_siteAttendanceProvider(siteId));
-                      ref.invalidate(_materialLogsProvider(siteId));
-                      ref.invalidate(_siteIncidentsProvider(siteId));
-                    },
+                  child: InkWell(
+                    key: const Key('supervisor_profile_card'),
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => context.go('/supervisor/profile'),
+                    child: Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 24,
+                                  backgroundColor: AppColors.primary.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                  child: const Icon(
+                                    Icons.person,
+                                    color: AppColors.primary,
+                                    size: 28,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    user?.name ?? 'Supervisor',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 24),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on,
+                                  size: 20,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: siteAsync.when(
+                                    loading: () => const Text(
+                                      'Loading site…',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    error: (_, _) => Text(
+                                      'Site: $siteId',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    data: (site) => Text(
+                                      site != null
+                                          ? site.name
+                                          : 'Site: $siteId',
+                                      key: const Key('site_name_header'),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                data: (activities) {
-                  if (activities.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(24.0),
-                      child: EmptyView(
-                        message:
-                            'No recent activity recorded for this site yet.',
-                      ),
-                    );
-                  }
 
-                  return ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    itemCount: activities.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final item = activities[index];
-                      return _ActivityTile(item: item, formatTime: _formatTime);
-                    },
-                  );
-                },
-              ),
-              const SizedBox(height: 32),
-            ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    'Daily Actions',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    children: [
+                      _ActionCard(
+                        key: const Key('action_attendance'),
+                        icon: Icons.how_to_reg,
+                        iconColor: AppColors.primary,
+                        title: 'Mark Attendance',
+                        subtitle: 'Record daily presence for site crew',
+                        onTap: () => context.push('/supervisor/attendance'),
+                      ),
+                      const SizedBox(height: 12),
+                      _ActionCard(
+                        key: const Key('action_material'),
+                        icon: Icons.inventory_2,
+                        iconColor: Color(0xFFB45309),
+                        title: 'Log Material Usage',
+                        subtitle: 'Record material consumption and track stock',
+                        onTap: () => context.push('/supervisor/material'),
+                      ),
+                      const SizedBox(height: 12),
+                      _ActionCard(
+                        key: const Key('action_incident'),
+                        icon: Icons.warning_amber_rounded,
+                        iconColor: AppColors.critical,
+                        title: 'Report Incident',
+                        subtitle: 'Log hazards, safety events, and escalations',
+                        onTap: () => context.push('/supervisor/incident'),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+                const Divider(thickness: 8, height: 24),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Recent Activity Feed',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Latest 10 items',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                activityAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: LoadingView(message: 'Loading activity feed…'),
+                  ),
+                  error: (e, _) => Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: ErrorView(
+                      message: 'Failed to load activity: $e',
+                      onRetry: () {
+                        ref.invalidate(_siteAttendanceProvider(siteId));
+                        ref.invalidate(_materialLogsProvider(siteId));
+                        ref.invalidate(_siteIncidentsProvider(siteId));
+                      },
+                    ),
+                  ),
+                  data: (activities) {
+                    if (activities.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.all(24.0),
+                        child: EmptyView(
+                          message:
+                              'No recent activity recorded for this site yet.',
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      itemCount: activities.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final item = activities[index];
+                        return _ActivityTile(
+                          item: item,
+                          formatTime: _formatTime,
+                        );
+                      },
+                    );
+                  },
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Action Card Widget (Large 48dp+ tap targets)
-// ---------------------------------------------------------------------------
 
 class _ActionCard extends StatelessWidget {
   final IconData icon;
@@ -580,10 +567,6 @@ class _ActionCard extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Activity Tile Widget
-// ---------------------------------------------------------------------------
 
 class _ActivityTile extends StatelessWidget {
   final ActivityItem item;

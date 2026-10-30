@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:site_pulse/data/models/attendance_entry.dart';
 import 'package:site_pulse/data/repositories/attendance_repository.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
@@ -16,7 +17,6 @@ class FakeAttendanceRepository implements AttendanceRepository {
         _attendance[a.id] = a;
       }
     } else {
-      // Seed initial attendance for today for some workers
       final today = DateTime.now();
       _seedDefaultAttendance(today);
     }
@@ -26,8 +26,14 @@ class FakeAttendanceRepository implements AttendanceRepository {
     final seedWorkersSite1 = ['w-101', 'w-102', 'w-103', 'w-104', 'w-105'];
     for (var i = 0; i < seedWorkersSite1.length; i++) {
       final wId = seedWorkersSite1[i];
-      final id = AttendanceEntry.buildId(siteId: 'site-1', workerId: wId, date: date);
-      final status = i == 3 ? AttendanceStatus.half : (i == 4 ? AttendanceStatus.absent : AttendanceStatus.present);
+      final id = AttendanceEntry.buildId(
+        siteId: 'site-1',
+        workerId: wId,
+        date: date,
+      );
+      final status = i == 3
+          ? AttendanceStatus.half
+          : (i == 4 ? AttendanceStatus.absent : AttendanceStatus.present);
       _attendance[id] = AttendanceEntry(
         id: id,
         workerId: wId,
@@ -45,9 +51,19 @@ class FakeAttendanceRepository implements AttendanceRepository {
     DateTime? startDate,
     DateTime? endDate,
   }) async* {
-    yield _filter(siteId: siteId, date: date, startDate: startDate, endDate: endDate);
+    yield _filter(
+      siteId: siteId,
+      date: date,
+      startDate: startDate,
+      endDate: endDate,
+    );
     yield* _changeController.stream.map(
-      (_) => _filter(siteId: siteId, date: date, startDate: startDate, endDate: endDate),
+      (_) => _filter(
+        siteId: siteId,
+        date: date,
+        startDate: startDate,
+        endDate: endDate,
+      ),
     );
   }
 
@@ -69,12 +85,27 @@ class FakeAttendanceRepository implements AttendanceRepository {
         }
       }
       if (startDate != null) {
-        final startDay = DateTime(startDate.year, startDate.month, startDate.day);
-        final entryDay = DateTime(entry.date.year, entry.date.month, entry.date.day);
+        final startDay = DateTime(
+          startDate.year,
+          startDate.month,
+          startDate.day,
+        );
+        final entryDay = DateTime(
+          entry.date.year,
+          entry.date.month,
+          entry.date.day,
+        );
         if (entryDay.isBefore(startDay)) return false;
       }
       if (endDate != null) {
-        final endDay = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+        final endDay = DateTime(
+          endDate.year,
+          endDate.month,
+          endDate.day,
+          23,
+          59,
+          59,
+        );
         if (entry.date.isAfter(endDay)) return false;
       }
       return true;
@@ -105,7 +136,11 @@ class FakeAttendanceRepository implements AttendanceRepository {
 
     final id = entry.id.isNotEmpty
         ? entry.id
-        : AttendanceEntry.buildId(siteId: sId, workerId: entry.workerId, date: entry.date);
+        : AttendanceEntry.buildId(
+            siteId: sId,
+            workerId: entry.workerId,
+            date: entry.date,
+          );
 
     final toSave = entry.id == id && entry.siteId == sId
         ? entry

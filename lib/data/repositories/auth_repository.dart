@@ -43,7 +43,6 @@ abstract class AuthRepository {
   Stream<RepositoryError> get errorStream;
 
   void signOut();
-  void switchUser(String uid);
 
   Future<AppUser> signIn(String email, String password) {
     throw UnimplementedError('signIn has not been implemented.');

@@ -4,8 +4,6 @@ import 'package:site_pulse/data/models/worker.dart';
 import 'package:site_pulse/data/models/attendance_entry.dart';
 
 void main() {
-  // ── Site.toFirestore / Site.fromFirestore ────────────────────────────
-
   group('Site Firestore mapping', () {
     test('toFirestore excludes id and hasPendingWrites', () {
       final site = Site(
@@ -32,11 +30,10 @@ void main() {
     });
 
     test('fromFirestore round-trip via plain map', () {
-      final site = Site.fromFirestore(
-        'site-1',
-        {'name': 'Metro', 'lastEntryAt': null},
-        hasPendingWrites: true,
-      );
+      final site = Site.fromFirestore('site-1', {
+        'name': 'Metro',
+        'lastEntryAt': null,
+      }, hasPendingWrites: true);
 
       expect(site.id, 'site-1');
       expect(site.name, 'Metro');
@@ -50,8 +47,6 @@ void main() {
       expect(site.name, '');
     });
   });
-
-  // ── Worker.toFirestore / Worker.fromFirestore ───────────────────────
 
   group('Worker Firestore mapping', () {
     test('toFirestore excludes id, siteId, hasPendingWrites', () {
@@ -77,12 +72,12 @@ void main() {
     });
 
     test('fromFirestore injects docId and siteId from path', () {
-      final worker = Worker.fromFirestore(
-        'w-42',
-        'site-x',
-        {'name': 'Vikram', 'trade': 'Welder', 'workerCode': 'WEL-42', 'active': false},
-        hasPendingWrites: true,
-      );
+      final worker = Worker.fromFirestore('w-42', 'site-x', {
+        'name': 'Vikram',
+        'trade': 'Welder',
+        'workerCode': 'WEL-42',
+        'active': false,
+      }, hasPendingWrites: true);
 
       expect(worker.id, 'w-42');
       expect(worker.siteId, 'site-x');
@@ -94,17 +89,15 @@ void main() {
     });
 
     test('fromFirestore defaults active to true when missing', () {
-      final worker = Worker.fromFirestore(
-        'w-99',
-        'site-y',
-        {'name': 'Test', 'trade': 'Helper', 'workerCode': 'HLP-99'},
-      );
+      final worker = Worker.fromFirestore('w-99', 'site-y', {
+        'name': 'Test',
+        'trade': 'Helper',
+        'workerCode': 'HLP-99',
+      });
       expect(worker.active, isTrue);
       expect(worker.hasPendingWrites, isFalse);
     });
   });
-
-  // ── AttendanceEntry dateKey / toFirestore / fromFirestore ────────────
 
   group('AttendanceEntry Firestore mapping', () {
     test('dateKeyFromDate formats correctly', () {
@@ -170,13 +163,11 @@ void main() {
     });
 
     test('fromFirestore falls back when dateKey is null', () {
-      final entry = AttendanceEntry.fromFirestore(
-        'id-x',
-        'site-2',
-        {'workerId': 'w-2', 'status': 'present'},
-      );
+      final entry = AttendanceEntry.fromFirestore('id-x', 'site-2', {
+        'workerId': 'w-2',
+        'status': 'present',
+      });
 
-      // Falls back to DateTime.now() — just verify it doesn't crash
       expect(entry.id, 'id-x');
       expect(entry.siteId, 'site-2');
       expect(entry.status, AttendanceStatus.present);

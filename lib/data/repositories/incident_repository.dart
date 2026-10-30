@@ -2,8 +2,6 @@ import 'package:site_pulse/data/models/incident.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
 
 abstract class IncidentRepository {
-  /// Watch incidents. Supervisor passes siteId. PM passes null for all sites or specific siteId,
-  /// with date-range filters and optional severity filter.
   Stream<List<Incident>> watchIncidents({
     String? siteId,
     DateTime? startDate,
@@ -11,10 +9,7 @@ abstract class IncidentRepository {
     Severity? severity,
   });
 
-  /// Watch a single incident
-  Stream<Incident?> watchIncident(String id);
-
-  /// Fire-and-forget write: returns incident ID immediately
+  /// Returns immediately so callers never wait for offline writes.
   String reportIncident(Incident incident);
 
   Stream<RepositoryError> get errorStream;

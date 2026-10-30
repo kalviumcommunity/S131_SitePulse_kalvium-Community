@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:site_pulse/data/models/app_user.dart';
 import 'package:site_pulse/data/repositories/auth_repository.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
@@ -33,7 +34,10 @@ class FakeAuthRepository implements AuthRepository {
     for (final u in seed) {
       _users[u.uid] = u;
     }
-    _currentUser = initialUser ?? _users['user-sup-1'] ?? (seed.isNotEmpty ? seed.first : null);
+    _currentUser =
+        initialUser ??
+        _users['user-sup-1'] ??
+        (seed.isNotEmpty ? seed.first : null);
   }
 
   @override
@@ -54,7 +58,6 @@ class FakeAuthRepository implements AuthRepository {
     _userController.add(null);
   }
 
-  @override
   void switchUser(String uid) {
     if (_users.containsKey(uid)) {
       _currentUser = _users[uid];
@@ -76,7 +79,16 @@ class FakeAuthRepository implements AuthRepository {
       (u) =>
           u.uid.toLowerCase() == normalized ||
           u.name.toLowerCase() == normalized,
-      orElse: () => _currentUser ?? (defaultUsers.isNotEmpty ? defaultUsers.first : const AppUser(uid: 'user-sup-1', role: UserRole.supervisor, name: 'Suresh Kumar', siteId: 'site-1')),
+      orElse: () =>
+          _currentUser ??
+          (defaultUsers.isNotEmpty
+              ? defaultUsers.first
+              : const AppUser(
+                  uid: 'user-sup-1',
+                  role: UserRole.supervisor,
+                  name: 'Suresh Kumar',
+                  siteId: 'site-1',
+                )),
     );
     _currentUser = user;
     _userController.add(_currentUser);

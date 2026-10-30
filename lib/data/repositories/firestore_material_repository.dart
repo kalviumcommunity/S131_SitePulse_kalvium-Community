@@ -4,15 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:site_pulse/data/models/material.dart';
 import 'package:site_pulse/data/models/material_log.dart';
-import 'package:site_pulse/data/repositories/firestore/firestore_multi_site_repository.dart';
+import 'package:site_pulse/data/repositories/firestore_site_repository.dart';
 import 'package:site_pulse/data/repositories/material_repository.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:uuid/uuid.dart';
 
-/// Real Firestore-backed [MaterialRepository].
-///
-/// Material data is stored below `sites/{siteId}/materials` and usage logs
-/// below `sites/{siteId}/materialLogs`.
 class FirestoreMaterialRepository implements MaterialRepository {
   FirestoreMaterialRepository({
     FirebaseFirestore? firestore,
@@ -163,18 +159,6 @@ class FirestoreMaterialRepository implements MaterialRepository {
   }
 
   @override
-  String saveMaterial(Material material) {
-    _errorController.add(
-      RepositoryError(
-        operation: 'saveMaterial',
-        message: 'Materials are managed outside the client application',
-        documentId: material.id,
-      ),
-    );
-    return material.id;
-  }
-
-  @override
   String logUsage({
     required String materialId,
     required double qtyUsed,
@@ -234,6 +218,7 @@ class FirestoreMaterialRepository implements MaterialRepository {
 
     final effectiveDate = date ?? DateTime.now();
     final remainingAfter = known.material.currentStock - qtyUsed;
+    // A batch and increment keep the log and stock update atomic without a transaction.
     final batch = _db.batch();
     batch.set(_logsCol(known.siteId).doc(id), {
       'materialId': materialId,

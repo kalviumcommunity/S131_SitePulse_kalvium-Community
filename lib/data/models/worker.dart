@@ -60,12 +60,10 @@ class Worker {
       workerCode: map['workerCode'] as String? ?? '',
       active: map['active'] as bool? ?? true,
       siteId: map['siteId'] as String?,
-      hasPendingWrites:
-          (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
+      hasPendingWrites: (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
     );
   }
 
-  /// Firestore document data (excludes id, siteId, hasPendingWrites).
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
@@ -75,7 +73,6 @@ class Worker {
     };
   }
 
-  /// Construct from a Firestore document snapshot.
   factory Worker.fromFirestore(
     String docId,
     String siteId,
@@ -107,8 +104,15 @@ class Worker {
           hasPendingWrites == other.hasPendingWrites;
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, trade, workerCode, active, siteId, hasPendingWrites);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    trade,
+    workerCode,
+    active,
+    siteId,
+    hasPendingWrites,
+  );
 
   @override
   String toString() =>

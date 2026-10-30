@@ -8,11 +8,7 @@ void main() {
   group('SyncChip Widget Tests', () {
     testWidgets('displays Pending state with amber clock icon', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SyncChip(pending: true),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SyncChip(pending: true))),
       );
 
       expect(find.text('Pending'), findsOneWidget);
@@ -22,11 +18,7 @@ void main() {
 
     testWidgets('displays Synced state with check icon', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SyncChip(pending: false),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: SyncChip(pending: false))),
       );
 
       expect(find.text('Synced'), findsOneWidget);
@@ -36,12 +28,12 @@ void main() {
   });
 
   group('OfflineBanner Widget Tests', () {
-    testWidgets('displays banner when offline override is true', (tester) async {
+    testWidgets('displays banner when offline override is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: OfflineBanner(overrideOffline: true),
-          ),
+          home: Scaffold(body: OfflineBanner(overrideOffline: true)),
         ),
       );
 
@@ -55,9 +47,7 @@ void main() {
     testWidgets('hides banner when offline override is false', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: OfflineBanner(overrideOffline: false),
-          ),
+          home: Scaffold(body: OfflineBanner(overrideOffline: false)),
         ),
       );
 
@@ -72,9 +62,7 @@ void main() {
     testWidgets('LoadingView displays spinner and message', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: LoadingView(message: 'Loading materials...'),
-          ),
+          home: Scaffold(body: LoadingView(message: 'Loading materials...')),
         ),
       );
 
@@ -106,7 +94,9 @@ void main() {
       expect(ctaPressed, isTrue);
     });
 
-    testWidgets('ErrorView displays message and triggers retry', (tester) async {
+    testWidgets('ErrorView displays message and triggers retry', (
+      tester,
+    ) async {
       var retryPressed = false;
 
       await tester.pumpWidget(
@@ -196,7 +186,9 @@ void main() {
       expect(updated, 4.0);
     });
 
-    testWidgets('cannot decrement below min (minus button disabled)', (tester) async {
+    testWidgets('cannot decrement below min (minus button disabled)', (
+      tester,
+    ) async {
       double? updated;
 
       await tester.pumpWidget(
@@ -224,7 +216,9 @@ void main() {
       expect(updated, isNull);
     });
 
-    testWidgets('cannot increment above max (plus button disabled)', (tester) async {
+    testWidgets('cannot increment above max (plus button disabled)', (
+      tester,
+    ) async {
       double? updated;
 
       await tester.pumpWidget(
@@ -254,7 +248,9 @@ void main() {
   });
 
   group('SeveritySelector Widget Tests', () {
-    testWidgets('renders all 4 severity levels and triggers onChanged', (tester) async {
+    testWidgets('renders all 4 severity levels and triggers onChanged', (
+      tester,
+    ) async {
       Severity? selected;
 
       await tester.pumpWidget(
@@ -281,7 +277,9 @@ void main() {
   });
 
   group('AttendanceToggle Widget Tests', () {
-    testWidgets('renders Present, Half-day, Absent and selects status on tap', (tester) async {
+    testWidgets('renders Present, Half-day, Absent and selects status on tap', (
+      tester,
+    ) async {
       AttendanceStatus? selected;
 
       await tester.pumpWidget(

@@ -15,10 +15,6 @@ import 'package:site_pulse/data/models/site.dart';
 import 'package:site_pulse/data/models/worker.dart';
 import 'package:site_pulse/data/providers.dart';
 
-// ---------------------------------------------------------------------------
-// Providers
-// ---------------------------------------------------------------------------
-
 final _siteDetailProvider = StreamProvider.autoDispose.family<Site?, String>((
   ref,
   siteId,
@@ -90,10 +86,6 @@ class _SiteDetailQuery {
 
 enum _AttendanceRange { week, month }
 
-// ---------------------------------------------------------------------------
-// Screen
-// ---------------------------------------------------------------------------
-
 class PmSiteDetailScreen extends ConsumerStatefulWidget {
   final String siteId;
   const PmSiteDetailScreen({super.key, required this.siteId});
@@ -102,8 +94,7 @@ class PmSiteDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<PmSiteDetailScreen> createState() => _PmSiteDetailScreenState();
 }
 
-class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
-{
+class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen> {
   int _selectedTabIndex = 0;
   _AttendanceRange? _attendanceRange = _AttendanceRange.week;
   late DateTimeRange _dateRange;
@@ -258,10 +249,6 @@ class _PmSiteDetailScreenState extends ConsumerState<PmSiteDetailScreen>
   }
 }
 
-// ---------------------------------------------------------------------------
-// Tab 1: Attendance History Component
-// ---------------------------------------------------------------------------
-
 class _AttendanceTab extends ConsumerWidget {
   final String siteId;
   final _SiteDetailQuery query;
@@ -319,10 +306,7 @@ class _AttendanceTab extends ConsumerWidget {
           SegmentedButton<_AttendanceRange>(
             key: const Key('attendance_range_toggle'),
             segments: const [
-              ButtonSegment(
-                value: _AttendanceRange.week,
-                label: Text('Week'),
-              ),
+              ButtonSegment(value: _AttendanceRange.week, label: Text('Week')),
               ButtonSegment(
                 value: _AttendanceRange.month,
                 label: Text('Month'),
@@ -353,8 +337,7 @@ class _AttendanceTab extends ConsumerWidget {
                   height: 240,
                   child: Center(
                     child: EmptyView(
-                      message:
-                          'No attendance records found for this period.',
+                      message: 'No attendance records found for this period.',
                     ),
                   ),
                 );
@@ -514,10 +497,7 @@ class _AttendanceDayCard extends StatelessWidget {
 }
 
 class _AttendanceChart extends StatelessWidget {
-  const _AttendanceChart({
-    required this.dates,
-    required this.recordsByDay,
-  });
+  const _AttendanceChart({required this.dates, required this.recordsByDay});
 
   final List<DateTime> dates;
   final Map<String, List<AttendanceEntry>> recordsByDay;
@@ -553,8 +533,7 @@ class _AttendanceChart extends StatelessWidget {
                         date: dates[index],
                         counts: dailyCounts[index],
                         maxCount: maxCount,
-                        showDateLabel:
-                            dates.length <= 7 || index % 5 == 0,
+                        showDateLabel: dates.length <= 7 || index % 5 == 0,
                       ),
                     ),
                 ],
@@ -639,7 +618,9 @@ class _AttendanceBar extends StatelessWidget {
                   width: double.infinity,
                   height: barHeight,
                   decoration: BoxDecoration(
-                    color: counts.total == 0 ? AppColors.surfaceContainer : null,
+                    color: counts.total == 0
+                        ? AppColors.surfaceContainer
+                        : null,
                     border: Border.all(color: AppColors.border),
                     borderRadius: BorderRadius.circular(3),
                   ),
@@ -714,10 +695,6 @@ class _AttendanceLegend extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Tab 2: Materials Component
-// ---------------------------------------------------------------------------
-
 class _MaterialsTab extends ConsumerWidget {
   final _SiteDetailQuery query;
 
@@ -782,193 +759,188 @@ class _MaterialsTab extends ConsumerWidget {
         return RefreshIndicator(
           onRefresh: refresh,
           child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Current Stock Status',
-                style: Theme.of(context).textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-
-              // Materials Grid/List
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: materials.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final m = materials[index];
-                  final isLow = isLowStock(m);
-
-                  return Card(
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: isLow
-                            ? Colors.orange.shade300
-                            : Colors.grey.shade200,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.inventory_2,
-                            color: isLow
-                                ? Colors.orange.shade800
-                                : AppColors.primary,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  m.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Current: ${m.currentStock.toStringAsFixed(1)} ${m.unit}  •  Threshold: ${m.lowStockThreshold.toStringAsFixed(0)} ${m.unit}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: isLow
-                                        ? Colors.orange.shade900
-                                        : Colors.grey.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (isLow)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.shade100,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'LOW STOCK',
-                                style: TextStyle(
-                                  color: Colors.orange.shade900,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            )
-                          else
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'NORMAL',
-                                style: TextStyle(
-                                  color: Colors.green.shade800,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 24),
-              const Divider(thickness: 4),
-              const SizedBox(height: 16),
-
-              Text(
-                'Recent Material Usage Logs',
-                style: Theme.of(context).textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-
-              logsAsync.when(
-                loading: () =>
-                    const LoadingView(message: 'Loading material logs…'),
-                error: (error, _) => ErrorView(
-                  message: 'Failed to load material logs: $error',
-                  onRetry: () =>
-                      ref.invalidate(_siteDetailMaterialLogsProvider(query)),
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Current Stock Status',
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                data: (logs) => logs.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16.0),
-                        child: Text(
-                          'No material usage logged in this date range.',
-                        ),
-                      )
-                    : ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: logs.length > 20 ? 20 : logs.length,
-                        separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final log = logs[index];
-                          final mat = materialMap[log.materialId];
-                          final unit = mat?.unit ?? 'units';
-                          final name = mat?.name ?? log.materialId;
+                const SizedBox(height: 12),
 
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: CircleAvatar(
-                              radius: 18,
-                              backgroundColor: Colors.orange.shade50,
-                              child: Icon(
-                                Icons.remove,
-                                color: Colors.orange.shade900,
-                                size: 18,
-                              ),
-                            ),
-                            title: Text(
-                              '−${log.qtyUsed.toStringAsFixed(1)} $unit  ($name)',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            subtitle: Text(
-                              'Remaining: ${log.remainingAfter.toStringAsFixed(1)} $unit  •  ${_formatDate(log.date)}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            trailing: SyncChip(pending: log.hasPendingWrites),
-                          );
-                        },
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: materials.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final m = materials[index];
+                    final isLow = isLowStock(m);
+
+                    return Card(
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: isLow
+                              ? Colors.orange.shade300
+                              : Colors.grey.shade200,
+                        ),
                       ),
-              ),
-            ],
-          ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.inventory_2,
+                              color: isLow
+                                  ? Colors.orange.shade800
+                                  : AppColors.primary,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    m.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Current: ${m.currentStock.toStringAsFixed(1)} ${m.unit}  •  Threshold: ${m.lowStockThreshold.toStringAsFixed(0)} ${m.unit}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isLow
+                                          ? Colors.orange.shade900
+                                          : Colors.grey.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isLow)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade100,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'LOW STOCK',
+                                  style: TextStyle(
+                                    color: Colors.orange.shade900,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'NORMAL',
+                                  style: TextStyle(
+                                    color: Colors.green.shade800,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 24),
+                const Divider(thickness: 4),
+                const SizedBox(height: 16),
+
+                Text(
+                  'Recent Material Usage Logs',
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+
+                logsAsync.when(
+                  loading: () =>
+                      const LoadingView(message: 'Loading material logs…'),
+                  error: (error, _) => ErrorView(
+                    message: 'Failed to load material logs: $error',
+                    onRetry: () =>
+                        ref.invalidate(_siteDetailMaterialLogsProvider(query)),
+                  ),
+                  data: (logs) => logs.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16.0),
+                          child: Text(
+                            'No material usage logged in this date range.',
+                          ),
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: logs.length > 20 ? 20 : logs.length,
+                          separatorBuilder: (_, _) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final log = logs[index];
+                            final mat = materialMap[log.materialId];
+                            final unit = mat?.unit ?? 'units';
+                            final name = mat?.name ?? log.materialId;
+
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: CircleAvatar(
+                                radius: 18,
+                                backgroundColor: Colors.orange.shade50,
+                                child: Icon(
+                                  Icons.remove,
+                                  color: Colors.orange.shade900,
+                                  size: 18,
+                                ),
+                              ),
+                              title: Text(
+                                '−${log.qtyUsed.toStringAsFixed(1)} $unit  ($name)',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Remaining: ${log.remainingAfter.toStringAsFixed(1)} $unit  •  ${_formatDate(log.date)}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              trailing: SyncChip(pending: log.hasPendingWrites),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Tab 3: Incidents Component
-// ---------------------------------------------------------------------------
 
 class _IncidentsTab extends ConsumerWidget {
   final _SiteDetailQuery query;
@@ -1059,89 +1031,92 @@ class _IncidentsTab extends ConsumerWidget {
         return RefreshIndicator(
           onRefresh: refresh,
           child: ListView.separated(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          itemCount: sorted.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            final inc = sorted[index];
-            final color = _severityColor(inc.severity);
-            final icon = _severityIcon(inc.severity);
-            final isEscalated = isHighSeverity(inc.severity);
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            itemCount: sorted.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final inc = sorted[index];
+              final color = _severityColor(inc.severity);
+              final icon = _severityIcon(inc.severity);
+              final isEscalated = isHighSeverity(inc.severity);
 
-            return Card(
-              elevation: 1,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: color.withValues(alpha: 0.3)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(icon, color: color, size: 20),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            inc.severity.name.toUpperCase(),
-                            style: TextStyle(
-                              color: color,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                        if (isEscalated) ...[
-                          const SizedBox(width: 6),
+              return Card(
+                elevation: 1,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: color.withValues(alpha: 0.3)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(icon, color: color, size: 20),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
+                              horizontal: 8,
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.red.shade100,
+                              color: color.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              'ESCALATED',
+                              inc.severity.name.toUpperCase(),
                               style: TextStyle(
-                                color: Colors.red.shade900,
+                                color: color,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 9,
+                                fontSize: 11,
                               ),
                             ),
                           ),
-                        ],
-                        const Spacer(),
-                        Text(
-                          _formatDate(inc.occurredAt),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
+                          if (isEscalated) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade100,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'ESCALATED',
+                                style: TextStyle(
+                                  color: Colors.red.shade900,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 9,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const Spacer(),
+                          Text(
+                            _formatDate(inc.occurredAt),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        SyncChip(pending: inc.hasPendingWrites),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(inc.description, style: const TextStyle(fontSize: 14)),
-                  ],
+                          const SizedBox(width: 8),
+                          SyncChip(pending: inc.hasPendingWrites),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        inc.description,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
           ),
         );
       },

@@ -11,9 +11,10 @@ import 'package:site_pulse/data/models/incident.dart';
 import 'package:site_pulse/data/models/material.dart' as sp;
 import 'package:site_pulse/data/models/material_log.dart';
 import 'package:site_pulse/data/models/site.dart';
-import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/supervisor/home/supervisor_home_screen.dart';
+
+import '../../support/fakes/fakes.dart';
+import '../../support/test_overrides.dart';
 
 class _TrackingAttendanceRepository extends FakeAttendanceRepository {
   _TrackingAttendanceRepository({super.initialAttendance});
@@ -107,16 +108,13 @@ Widget buildScreen({
   );
 
   return ProviderScope(
-    overrides: [
-      authRepositoryProvider.overrideWithValue(actualAuth),
-      siteRepositoryProvider.overrideWithValue(actualSite),
-      if (attendanceRepo != null)
-        attendanceRepositoryProvider.overrideWithValue(attendanceRepo),
-      if (materialRepo != null)
-        materialRepositoryProvider.overrideWithValue(materialRepo),
-      if (incidentRepo != null)
-        incidentRepositoryProvider.overrideWithValue(incidentRepo),
-    ],
+    overrides: fakeRepositoryOverrides(
+      authRepository: actualAuth,
+      siteRepository: actualSite,
+      attendanceRepository: attendanceRepo,
+      materialRepository: materialRepo,
+      incidentRepository: incidentRepo,
+    ),
     child: MaterialApp.router(routerConfig: router),
   );
 }
@@ -155,7 +153,6 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Test Attendance Navigation
       await tester.tap(find.byKey(const Key('action_attendance')));
       await tester.pumpAndSettle();
       expect(find.text('Attendance Route'), findsOneWidget);
@@ -212,9 +209,11 @@ void main() {
       tester,
     ) async {
       final now = DateTime.now();
-      final yesterday = DateTime(now.year, now.month, now.day).subtract(
-        const Duration(days: 1),
-      );
+      final yesterday = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(const Duration(days: 1));
       final attendanceRepo = FakeAttendanceRepository(
         initialAttendance: [
           AttendanceEntry(
@@ -271,7 +270,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text(DateFormat('d MMM').format(yesterday)), findsNWidgets(2));
+      expect(
+        find.text(DateFormat('d MMM').format(yesterday)),
+        findsNWidgets(2),
+      );
       expect(find.textContaining('00:00'), findsNothing);
       expect(find.text('30 mins ago'), findsOneWidget);
     });

@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 
-/// Modern Harmonious Ambient Background for Site Pulse dashboards.
-/// Uses a refined cool-neutral slate canvas (Zinc-100 / Slate-100) with a gentle
-/// ambient violet mist that creates balanced, elegant contrast with white cards and buttons
-/// without harsh or jarring contrast.
 class AppPageBackground extends StatelessWidget {
   final Widget child;
 
@@ -14,21 +10,16 @@ class AppPageBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFFEAECF0), // Refined neutral slate canvas
+        color: Color(0xFFEAECF0),
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFEBE8F6), // Subtle soft violet ambient mist at top
-            Color(0xFFEAECF0), // Smooth neutral transition
-            Color(0xFFE3E6EB), // Grounded cool slate base
-          ],
+          colors: [Color(0xFFEBE8F6), Color(0xFFEAECF0), Color(0xFFE3E6EB)],
           stops: [0.0, 0.35, 1.0],
         ),
       ),
       child: Stack(
         children: [
-          // Soft ambient decorative glow orbs (ignored for pointer events)
           Positioned.fill(
             child: IgnorePointer(
               child: Stack(
@@ -71,7 +62,6 @@ class AppPageBackground extends StatelessWidget {
               ),
             ),
           ),
-          // Foreground content
           child,
         ],
       ),

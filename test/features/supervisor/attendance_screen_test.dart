@@ -6,9 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/data/models/app_user.dart';
 import 'package:site_pulse/data/models/attendance_entry.dart';
 import 'package:site_pulse/data/models/worker.dart';
-import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/supervisor/attendance/attendance_screen.dart';
+
+import '../../support/fakes/fakes.dart';
+import '../../support/test_overrides.dart';
 
 class _CountingWorkerRepository extends FakeWorkerRepository {
   int watchWorkersCalls = 0;
@@ -41,7 +42,6 @@ class _CountingAttendanceRepository extends FakeAttendanceRepository {
 }
 
 void main() {
-  // Supervisor user for site-1 (seeded with workers w-101..w-110)
   const supUser = AppUser(
     uid: 'user-sup-1',
     role: UserRole.supervisor,
@@ -51,15 +51,9 @@ void main() {
 
   Widget buildScreen({AppUser user = supUser}) {
     return ProviderScope(
-      overrides: [
-        authRepositoryProvider.overrideWithValue(
-          FakeAuthRepository(initialUser: user),
-        ),
-        workerRepositoryProvider.overrideWithValue(FakeWorkerRepository()),
-        attendanceRepositoryProvider.overrideWithValue(
-          FakeAttendanceRepository(),
-        ),
-      ],
+      overrides: fakeRepositoryOverrides(
+        authRepository: FakeAuthRepository(initialUser: user),
+      ),
       child: const MaterialApp(home: AttendanceScreen()),
     );
   }
@@ -72,13 +66,11 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            authRepositoryProvider.overrideWithValue(authRepository),
-            workerRepositoryProvider.overrideWithValue(workerRepository),
-            attendanceRepositoryProvider.overrideWithValue(
-              attendanceRepository,
-            ),
-          ],
+          overrides: fakeRepositoryOverrides(
+            authRepository: authRepository,
+            workerRepository: workerRepository,
+            attendanceRepository: attendanceRepository,
+          ),
           child: const MaterialApp(home: AttendanceScreen()),
         ),
       );
@@ -156,8 +148,6 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // FakeWorkerRepository seeds workers w-101..w-110 for site-1
-      // At least some toggles and chips must be visible
       expect(find.byKey(const Key('attendance_toggle_w-101')), findsOneWidget);
       expect(find.byKey(const Key('sync_chip_w-101')), findsOneWidget);
     });

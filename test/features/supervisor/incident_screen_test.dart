@@ -6,9 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/core/constants/thresholds.dart';
 import 'package:site_pulse/data/models/incident.dart';
 import 'package:site_pulse/data/models/app_user.dart';
-import 'package:site_pulse/data/providers.dart';
-import 'package:site_pulse/data/repositories/fakes/fakes.dart';
 import 'package:site_pulse/features/supervisor/incident/incident_screen.dart';
+
+import '../../support/fakes/fakes.dart';
+import '../../support/test_overrides.dart';
 
 class _CountingIncidentRepository extends FakeIncidentRepository {
   int watchIncidentsCalls = 0;
@@ -46,10 +47,10 @@ Widget buildScreen({
   final actualIncident = incidentRepo ?? FakeIncidentRepository();
 
   return ProviderScope(
-    overrides: [
-      authRepositoryProvider.overrideWithValue(actualAuth),
-      incidentRepositoryProvider.overrideWithValue(actualIncident),
-    ],
+    overrides: fakeRepositoryOverrides(
+      authRepository: actualAuth,
+      incidentRepository: actualIncident,
+    ),
     child: const MaterialApp(home: IncidentScreen()),
   );
 }
@@ -64,10 +65,10 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            authRepositoryProvider.overrideWithValue(authRepository),
-            incidentRepositoryProvider.overrideWithValue(incidentRepository),
-          ],
+          overrides: fakeRepositoryOverrides(
+            authRepository: authRepository,
+            incidentRepository: incidentRepository,
+          ),
           child: const MaterialApp(home: IncidentScreen()),
         ),
       );
@@ -127,10 +128,8 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Initially Minor is selected, banner should not be present
         expect(find.byKey(const Key('escalation_banner')), findsNothing);
 
-        // Tap High
         await tester.tap(find.byKey(const Key('severity_high')));
         await tester.pump();
         expect(find.byKey(const Key('escalation_banner')), findsOneWidget);
@@ -142,12 +141,10 @@ void main() {
         );
         expect(find.textContaining('automatically notify'), findsNothing);
 
-        // Tap Critical
         await tester.tap(find.byKey(const Key('severity_critical')));
         await tester.pump();
         expect(find.byKey(const Key('escalation_banner')), findsOneWidget);
 
-        // Tap Minor
         await tester.tap(find.byKey(const Key('severity_minor')));
         await tester.pump();
         expect(find.byKey(const Key('escalation_banner')), findsNothing);
@@ -196,7 +193,6 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Saved on this device'), findsOneWidget);
-        // Verify description cleared
         final field = tester.widget<TextFormField>(
           find.byKey(const Key('incident_description_field')),
         );

@@ -269,16 +269,34 @@ class _AttendanceTab extends ConsumerWidget {
     final attendanceAsync = ref.watch(_siteDetailAttendanceProvider(query));
     final workersAsync = ref.watch(_siteDetailWorkersProvider(siteId));
 
+    Future<void> refresh() async {
+      ref.invalidate(_siteDetailAttendanceProvider(query));
+      ref.invalidate(_siteDetailWorkersProvider(siteId));
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+    }
+
     return attendanceAsync.when(
-      loading: () => const LoadingView(message: 'Loading attendance history…'),
-      error: (e, _) => ErrorView(
-        message: 'Failed to load attendance: $e',
-        onRetry: () => ref.invalidate(_siteDetailAttendanceProvider(query)),
+      loading: () => _refreshableStatus(
+        context,
+        const LoadingView(message: 'Loading attendance history…'),
+        refresh,
+      ),
+      error: (e, _) => _refreshableStatus(
+        context,
+        ErrorView(
+          message: 'Failed to load attendance: $e',
+          onRetry: () => ref.invalidate(_siteDetailAttendanceProvider(query)),
+        ),
+        refresh,
       ),
       data: (records) {
         if (records.isEmpty) {
-          return const EmptyView(
-            message: 'No attendance records found for this period.',
+          return _refreshableStatus(
+            context,
+            const EmptyView(
+              message: 'No attendance records found for this period.',
+            ),
+            refresh,
           );
         }
 
@@ -294,7 +312,10 @@ class _AttendanceTab extends ConsumerWidget {
 
         final sortedDays = byDay.keys.toList()..sort((a, b) => b.compareTo(a));
 
-        return ListView.builder(
+        return RefreshIndicator(
+          onRefresh: refresh,
+          child: ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           itemCount: sortedDays.length,
           itemBuilder: (context, index) {
@@ -380,6 +401,7 @@ class _AttendanceTab extends ConsumerWidget {
               ),
             );
           },
+          ),
         );
       },
     );
@@ -420,20 +442,41 @@ class _MaterialsTab extends ConsumerWidget {
     );
     final logsAsync = ref.watch(_siteDetailMaterialLogsProvider(query));
 
+    Future<void> refresh() async {
+      ref.invalidate(_siteDetailMaterialsProvider(query.siteId));
+      ref.invalidate(_siteDetailMaterialLogsProvider(query));
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+    }
+
     return materialsAsync.when(
-      loading: () => const LoadingView(message: 'Loading materials…'),
-      error: (e, _) => ErrorView(
-        message: 'Failed to load materials: $e',
-        onRetry: () =>
-            ref.invalidate(_siteDetailMaterialsProvider(query.siteId)),
+      loading: () => _refreshableStatus(
+        context,
+        const LoadingView(message: 'Loading materials…'),
+        refresh,
+      ),
+      error: (e, _) => _refreshableStatus(
+        context,
+        ErrorView(
+          message: 'Failed to load materials: $e',
+          onRetry: () =>
+              ref.invalidate(_siteDetailMaterialsProvider(query.siteId)),
+        ),
+        refresh,
       ),
       data: (materials) {
         if (materials.isEmpty) {
-          return const EmptyView(message: 'No materials found.');
+          return _refreshableStatus(
+            context,
+            const EmptyView(message: 'No materials found.'),
+            refresh,
+          );
         }
 
         final materialMap = {for (final m in materials) m.id: m};
-        return SingleChildScrollView(
+        return RefreshIndicator(
+          onRefresh: refresh,
+          child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -610,6 +653,7 @@ class _MaterialsTab extends ConsumerWidget {
               ),
             ],
           ),
+          ),
         );
       },
     );
@@ -673,23 +717,43 @@ class _IncidentsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final incidentsAsync = ref.watch(_siteDetailIncidentsProvider(query));
 
+    Future<void> refresh() async {
+      ref.invalidate(_siteDetailIncidentsProvider(query));
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+    }
+
     return incidentsAsync.when(
-      loading: () => const LoadingView(message: 'Loading incidents…'),
-      error: (e, _) => ErrorView(
-        message: 'Failed to load incidents: $e',
-        onRetry: () => ref.invalidate(_siteDetailIncidentsProvider(query)),
+      loading: () => _refreshableStatus(
+        context,
+        const LoadingView(message: 'Loading incidents…'),
+        refresh,
+      ),
+      error: (e, _) => _refreshableStatus(
+        context,
+        ErrorView(
+          message: 'Failed to load incidents: $e',
+          onRetry: () => ref.invalidate(_siteDetailIncidentsProvider(query)),
+        ),
+        refresh,
       ),
       data: (incidents) {
         if (incidents.isEmpty) {
-          return const EmptyView(
-            message: 'No safety incidents reported for this site.',
+          return _refreshableStatus(
+            context,
+            const EmptyView(
+              message: 'No safety incidents reported for this site.',
+            ),
+            refresh,
           );
         }
 
         final sorted = incidents.toList()
           ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
 
-        return ListView.separated(
+        return RefreshIndicator(
+          onRefresh: refresh,
+          child: ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           itemCount: sorted.length,
           separatorBuilder: (_, _) => const SizedBox(height: 10),
@@ -772,8 +836,28 @@ class _IncidentsTab extends ConsumerWidget {
               ),
             );
           },
+          ),
         );
       },
     );
   }
+}
+
+Widget _refreshableStatus(
+  BuildContext context,
+  Widget status,
+  Future<void> Function() onRefresh,
+) {
+  return RefreshIndicator(
+    onRefresh: onRefresh,
+    child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.65,
+          child: Center(child: status),
+        ),
+      ],
+    ),
+  );
 }

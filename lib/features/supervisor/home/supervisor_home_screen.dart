@@ -284,6 +284,7 @@ class SupervisorHomeScreen extends ConsumerWidget {
           ref.invalidate(_materialLogsProvider(siteId));
           ref.invalidate(_materialsProvider(siteId));
           ref.invalidate(_siteIncidentsProvider(siteId));
+          await Future<void>.delayed(const Duration(milliseconds: 600));
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

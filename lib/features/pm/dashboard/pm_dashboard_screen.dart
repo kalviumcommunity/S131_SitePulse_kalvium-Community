@@ -259,6 +259,7 @@ class _PmDashboardScreenState extends ConsumerState<PmDashboardScreen> {
               ref.invalidate(_allMaterialsProvider(_selectedSiteId));
               ref.invalidate(_pmIncidentsProvider(query));
               ref.invalidate(_pmAttendanceProvider(query));
+              await Future<void>.delayed(const Duration(milliseconds: 600));
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),

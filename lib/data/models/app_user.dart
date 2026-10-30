@@ -10,8 +10,6 @@ enum UserRole {
   }
 }
 
-typedef AppUserRole = UserRole;
-
 class AppUser {
   final String uid;
   final UserRole role;

@@ -26,8 +26,6 @@ enum Severity {
   }
 }
 
-typedef IncidentSeverity = Severity;
-
 class Incident {
   final String id;
   final Severity severity;

@@ -23,23 +23,26 @@ void main() {
       expect(restored, equals(user));
     });
 
-    test('AppUser with null siteId and default hasPendingWrites round-trip', () {
-      final user = const AppUser(
-        uid: 'user-pm',
-        role: UserRole.pm,
-        name: 'Alice PM',
-      );
+    test(
+      'AppUser with null siteId and default hasPendingWrites round-trip',
+      () {
+        final user = const AppUser(
+          uid: 'user-pm',
+          role: UserRole.pm,
+          name: 'Alice PM',
+        );
 
-      final map = user.toMap();
-      final restored = AppUser.fromMap(map);
+        final map = user.toMap();
+        final restored = AppUser.fromMap(map);
 
-      expect(restored.uid, user.uid);
-      expect(restored.role, UserRole.pm);
-      expect(restored.name, user.name);
-      expect(restored.siteId, isNull);
-      expect(restored.hasPendingWrites, isFalse);
-      expect(restored, equals(user));
-    });
+        expect(restored.uid, user.uid);
+        expect(restored.role, UserRole.pm);
+        expect(restored.name, user.name);
+        expect(restored.siteId, isNull);
+        expect(restored.hasPendingWrites, isFalse);
+        expect(restored, equals(user));
+      },
+    );
 
     test('Site round-trip', () {
       final now = DateTime.now();
@@ -55,15 +58,15 @@ void main() {
 
       expect(restored.id, site.id);
       expect(restored.name, site.name);
-      expect(restored.lastEntryAt?.toIso8601String(), site.lastEntryAt?.toIso8601String());
+      expect(
+        restored.lastEntryAt?.toIso8601String(),
+        site.lastEntryAt?.toIso8601String(),
+      );
       expect(restored.hasPendingWrites, isTrue);
     });
 
     test('Site with null lastEntryAt round-trip', () {
-      const site = Site(
-        id: 'site-2',
-        name: 'New Site',
-      );
+      const site = Site(id: 'site-2', name: 'New Site');
 
       final map = site.toMap();
       final restored = Site.fromMap(map);
@@ -194,7 +197,10 @@ void main() {
       expect(restored.id, incident.id);
       expect(restored.severity, Severity.high);
       expect(restored.description, incident.description);
-      expect(restored.occurredAt.toIso8601String(), incident.occurredAt.toIso8601String());
+      expect(
+        restored.occurredAt.toIso8601String(),
+        incident.occurredAt.toIso8601String(),
+      );
       expect(restored.siteId, 'site-1');
       expect(restored.hasPendingWrites, isTrue);
       expect(restored, equals(incident));

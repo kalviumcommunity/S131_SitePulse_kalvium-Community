@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 
-/// Small pill that shows whether a record is pending sync or synced to the server.
-/// Uses icon + text so it never relies on color alone.
 class SyncChip extends StatelessWidget {
-  const SyncChip({
-    super.key,
-    required this.pending,
-  });
+  const SyncChip({super.key, required this.pending});
 
   final bool pending;
 
@@ -27,11 +22,7 @@ class SyncChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 14,
-            color: color,
-          ),
+          Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
           Text(
             label,

@@ -6,7 +6,6 @@ import 'package:site_pulse/data/repositories/repository_error.dart';
 
 class FakeIncidentRepository implements IncidentRepository {
   static List<Incident> get defaultIncidents => [
-    // One high severity incident
     Incident(
       id: 'inc-1',
       severity: Severity.high,
@@ -14,7 +13,6 @@ class FakeIncidentRepository implements IncidentRepository {
       occurredAt: DateTime.now().subtract(const Duration(days: 1)),
       siteId: 'site-1',
     ),
-    // One minor severity incident
     Incident(
       id: 'inc-2',
       severity: Severity.minor,

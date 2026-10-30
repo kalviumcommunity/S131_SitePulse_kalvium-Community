@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/data/models/app_user.dart';
 import 'package:site_pulse/router.dart';
+
 import 'support/fakes/fake_auth_repository.dart';
 import 'support/test_overrides.dart';
 
@@ -19,10 +20,7 @@ Widget createRouterTestApp({
 
   return ProviderScope(
     overrides: fakeRepositoryOverrides(authRepository: fakeAuthRepo),
-    child: MaterialApp.router(
-      theme: buildTheme(),
-      routerConfig: router,
-    ),
+    child: MaterialApp.router(theme: buildTheme(), routerConfig: router),
   );
 }
 
@@ -32,18 +30,21 @@ void main() {
       final fakeAuth = FakeAuthRepository(initialUser: null);
       fakeAuth.signOut();
 
-      await tester.pumpWidget(createRouterTestApp(
-        fakeAuthRepo: fakeAuth,
-        initialLocation: '/supervisor/home',
-      ));
+      await tester.pumpWidget(
+        createRouterTestApp(
+          fakeAuthRepo: fakeAuth,
+          initialLocation: '/supervisor/home',
+        ),
+      );
       await tester.pumpAndSettle();
 
-      // Expect to be redirected to login screen
       expect(find.text('Sign in'), findsOneWidget);
       expect(find.byKey(const Key('email_field')), findsOneWidget);
     });
 
-    testWidgets('redirects supervisor to /supervisor/home on login', (tester) async {
+    testWidgets('redirects supervisor to /supervisor/home on login', (
+      tester,
+    ) async {
       const supervisor = AppUser(
         uid: 'user-sup-1',
         role: UserRole.supervisor,
@@ -55,13 +56,11 @@ void main() {
         initialUser: supervisor,
       );
 
-      await tester.pumpWidget(createRouterTestApp(
-        fakeAuthRepo: fakeAuth,
-        initialLocation: '/login',
-      ));
+      await tester.pumpWidget(
+        createRouterTestApp(fakeAuthRepo: fakeAuth, initialLocation: '/login'),
+      );
       await tester.pumpAndSettle();
 
-      // Expect to be redirected to supervisor home
       expect(find.text('Supervisor Home'), findsOneWidget);
       expect(find.text('Suresh Kumar'), findsOneWidget);
       expect(find.text('Name: Suresh Kumar'), findsNothing);
@@ -75,18 +74,13 @@ void main() {
         name: 'Priya Sharma',
         siteId: null,
       );
-      final fakeAuth = FakeAuthRepository(
-        initialUsers: [pm],
-        initialUser: pm,
-      );
+      final fakeAuth = FakeAuthRepository(initialUsers: [pm], initialUser: pm);
 
-      await tester.pumpWidget(createRouterTestApp(
-        fakeAuthRepo: fakeAuth,
-        initialLocation: '/login',
-      ));
+      await tester.pumpWidget(
+        createRouterTestApp(fakeAuthRepo: fakeAuth, initialLocation: '/login'),
+      );
       await tester.pumpAndSettle();
 
-      // Expect to be redirected to PM dashboard
       expect(find.text('PM Dashboard'), findsOneWidget);
       expect(find.text('Name: Priya Sharma'), findsOneWidget);
       expect(find.text('Role: pm'), findsOneWidget);
@@ -104,13 +98,14 @@ void main() {
         initialUser: supervisor,
       );
 
-      await tester.pumpWidget(createRouterTestApp(
-        fakeAuthRepo: fakeAuth,
-        initialLocation: '/pm/dashboard',
-      ));
+      await tester.pumpWidget(
+        createRouterTestApp(
+          fakeAuthRepo: fakeAuth,
+          initialLocation: '/pm/dashboard',
+        ),
+      );
       await tester.pumpAndSettle();
 
-      // Must be redirected away from /pm to supervisor home
       expect(find.text('Supervisor Home'), findsOneWidget);
       expect(find.text('PM Dashboard'), findsNothing);
     });
@@ -122,18 +117,16 @@ void main() {
         name: 'Priya Sharma',
         siteId: null,
       );
-      final fakeAuth = FakeAuthRepository(
-        initialUsers: [pm],
-        initialUser: pm,
-      );
+      final fakeAuth = FakeAuthRepository(initialUsers: [pm], initialUser: pm);
 
-      await tester.pumpWidget(createRouterTestApp(
-        fakeAuthRepo: fakeAuth,
-        initialLocation: '/supervisor/home',
-      ));
+      await tester.pumpWidget(
+        createRouterTestApp(
+          fakeAuthRepo: fakeAuth,
+          initialLocation: '/supervisor/home',
+        ),
+      );
       await tester.pumpAndSettle();
 
-      // Must be redirected away from /supervisor to PM dashboard
       expect(find.text('PM Dashboard'), findsOneWidget);
       expect(find.text('Supervisor Home'), findsNothing);
     });
@@ -150,21 +143,25 @@ void main() {
         initialUser: supervisor,
       );
 
-      await tester.pumpWidget(createRouterTestApp(
-        fakeAuthRepo: fakeAuth,
-        initialLocation: '/supervisor/home',
-      ));
+      await tester.pumpWidget(
+        createRouterTestApp(
+          fakeAuthRepo: fakeAuth,
+          initialLocation: '/supervisor/home',
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Supervisor Home'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('logout_button')));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('logout_confirmation_dialog')), findsOneWidget);
+      expect(
+        find.byKey(const Key('logout_confirmation_dialog')),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(const Key('confirm_logout_button')));
       await tester.pumpAndSettle();
 
-      // Expect to be redirected back to /login
       expect(find.text('Sign in'), findsOneWidget);
       expect(find.byKey(const Key('email_field')), findsOneWidget);
     });
@@ -183,10 +180,12 @@ void main() {
         initialUser: supervisor,
       );
 
-      await tester.pumpWidget(createRouterTestApp(
-        fakeAuthRepo: fakeAuth,
-        initialLocation: '/supervisor/home',
-      ));
+      await tester.pumpWidget(
+        createRouterTestApp(
+          fakeAuthRepo: fakeAuth,
+          initialLocation: '/supervisor/home',
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(NavigationBar), findsOneWidget);
@@ -214,10 +213,12 @@ void main() {
         initialUser: supervisor,
       );
 
-      await tester.pumpWidget(createRouterTestApp(
-        fakeAuthRepo: fakeAuth,
-        initialLocation: '/supervisor/home',
-      ));
+      await tester.pumpWidget(
+        createRouterTestApp(
+          fakeAuthRepo: fakeAuth,
+          initialLocation: '/supervisor/home',
+        ),
+      );
       await tester.pumpAndSettle();
 
       for (final entry in [
@@ -249,10 +250,12 @@ void main() {
         initialUser: supervisor,
       );
 
-      await tester.pumpWidget(createRouterTestApp(
-        fakeAuthRepo: fakeAuth,
-        initialLocation: '/supervisor/home',
-      ));
+      await tester.pumpWidget(
+        createRouterTestApp(
+          fakeAuthRepo: fakeAuth,
+          initialLocation: '/supervisor/home',
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('supervisor_profile_card')));
       await tester.pumpAndSettle();
@@ -274,10 +277,12 @@ void main() {
         initialUser: supervisor,
       );
 
-      await tester.pumpWidget(createRouterTestApp(
-        fakeAuthRepo: fakeAuth,
-        initialLocation: '/supervisor/home',
-      ));
+      await tester.pumpWidget(
+        createRouterTestApp(
+          fakeAuthRepo: fakeAuth,
+          initialLocation: '/supervisor/home',
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.tap(
         find.descendant(
@@ -297,12 +302,17 @@ void main() {
         find.byKey(const Key('profile_logout_button')),
         200,
       );
-      await tester.ensureVisible(find.byKey(const Key('profile_logout_button')));
+      await tester.ensureVisible(
+        find.byKey(const Key('profile_logout_button')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('profile_logout_button')));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('logout_confirmation_dialog')), findsOneWidget);
+      expect(
+        find.byKey(const Key('logout_confirmation_dialog')),
+        findsOneWidget,
+      );
       expect(find.text('Are you sure you want to log out?'), findsOneWidget);
       await tester.tap(find.byKey(const Key('confirm_logout_button')));
       await tester.pumpAndSettle();
@@ -358,7 +368,10 @@ void main() {
       );
       await tester.tap(find.byKey(const Key('pm_profile_logout_button')));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('logout_confirmation_dialog')), findsOneWidget);
+      expect(
+        find.byKey(const Key('logout_confirmation_dialog')),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(const Key('confirm_logout_button')));
       await tester.pumpAndSettle();
       expect(find.text('Sign in'), findsOneWidget);

@@ -45,7 +45,7 @@ class AttendanceEntry {
     this.hasPendingWrites = false,
   });
 
-  /// Deterministic ID generator: siteId_workerId_yyyymmdd
+  /// One deterministic document per worker/site/day prevents duplicate attendance.
   static String buildId({
     required String siteId,
     required String workerId,
@@ -109,12 +109,11 @@ class AttendanceEntry {
           ? AttendanceStatus.fromString(map['status'] as String)
           : (map['status'] as AttendanceStatus? ?? AttendanceStatus.present),
       siteId: map['siteId'] as String?,
-      hasPendingWrites:
-          (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
+      hasPendingWrites: (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
     );
   }
 
-  /// Format date as yyyy-MM-dd string for Firestore dateKey field & range queries.
+  /// Local calendar dates keep range keys as yyyy-MM-dd strings.
   static String dateKeyFromDate(DateTime d) {
     final y = d.year.toString().padLeft(4, '0');
     final m = d.month.toString().padLeft(2, '0');
@@ -122,7 +121,6 @@ class AttendanceEntry {
     return '$y-$m-$day';
   }
 
-  /// Firestore document data (excludes id, siteId, hasPendingWrites).
   Map<String, dynamic> toFirestore({required String createdBy}) {
     return {
       'workerId': workerId,
@@ -133,14 +131,12 @@ class AttendanceEntry {
     };
   }
 
-  /// Construct from a Firestore document snapshot.
   factory AttendanceEntry.fromFirestore(
     String docId,
     String siteId,
     Map<String, dynamic> data, {
     bool hasPendingWrites = false,
   }) {
-    // Recover date from dateKey string (yyyy-MM-dd) for the model's DateTime field
     DateTime date;
     final dateKey = data['dateKey'] as String?;
     if (dateKey != null && dateKey.length == 10) {
@@ -177,15 +173,15 @@ class AttendanceEntry {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        workerId,
-        date.year,
-        date.month,
-        date.day,
-        status,
-        siteId,
-        hasPendingWrites,
-      );
+    id,
+    workerId,
+    date.year,
+    date.month,
+    date.day,
+    status,
+    siteId,
+    hasPendingWrites,
+  );
 
   @override
   String toString() =>

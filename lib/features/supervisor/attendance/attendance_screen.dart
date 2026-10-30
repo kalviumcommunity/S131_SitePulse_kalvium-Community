@@ -13,18 +13,12 @@ import 'package:site_pulse/data/models/worker.dart';
 import 'package:site_pulse/data/providers.dart';
 import 'package:site_pulse/data/repositories/attendance_repository.dart';
 
-// ---------------------------------------------------------------------------
-// Providers
-// ---------------------------------------------------------------------------
-
-/// Workers stream for the supervisor's site.
 final _attendanceWorkersProvider = StreamProvider.autoDispose
     .family<List<Worker>, String>((ref, siteId) {
       final repo = ref.watch(workerRepositoryProvider);
       return repo.watchWorkers(siteId);
     });
 
-/// Existing attendance stream for a given site + date.
 final _existingAttendanceProvider = StreamProvider.autoDispose
     .family<List<AttendanceEntry>, _AttendanceKey>((ref, key) {
       final repo = ref.watch(attendanceRepositoryProvider);
@@ -48,10 +42,6 @@ class _AttendanceKey {
   int get hashCode => Object.hash(siteId, date.year, date.month, date.day);
 }
 
-// ---------------------------------------------------------------------------
-// Screen
-// ---------------------------------------------------------------------------
-
 class AttendanceScreen extends ConsumerStatefulWidget {
   const AttendanceScreen({super.key});
 
@@ -61,7 +51,6 @@ class AttendanceScreen extends ConsumerStatefulWidget {
 
 class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   DateTime _selectedDate = _today();
-  // workerId → status (local overrides before save)
   final Map<String, AttendanceStatus> _statusMap = {};
 
   StreamSubscription<dynamic>? _errorSub;
@@ -74,7 +63,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   @override
   void initState() {
     super.initState();
-    // Listen to write errors from attendance repository
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final repo = ref.read(attendanceRepositoryProvider);
       _errorSub = repo.errorStream.listen((err) {
@@ -94,10 +82,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     _errorSub?.cancel();
     super.dispose();
   }
-
-  // -------------------------------------------------------------------------
-  // Date helpers
-  // -------------------------------------------------------------------------
 
   Future<void> _pickDate(BuildContext context) async {
     final picked = await showDatePicker(
@@ -137,10 +121,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     return isToday ? 'Today — $label' : label;
   }
 
-  // -------------------------------------------------------------------------
-  // Merge existing records with local overrides
-  // -------------------------------------------------------------------------
-
   AttendanceStatus _effectiveStatus(
     String workerId,
     List<AttendanceEntry> existing,
@@ -155,10 +135,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     final entry = existing.where((e) => e.workerId == workerId).firstOrNull;
     return entry?.hasPendingWrites ?? false;
   }
-
-  // -------------------------------------------------------------------------
-  // Save (fire-and-forget bulk write)
-  // -------------------------------------------------------------------------
 
   void _saveAttendance({
     required String siteId,
@@ -182,9 +158,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       );
     }).toList();
 
-    repo.recordBulkAttendance(entries); // fire-and-forget ✅
+    // Do not await so Firestore can queue writes while offline.
+    repo.recordBulkAttendance(entries);
 
-    // Clear local overrides — stream will reflect saved state
     setState(() => _statusMap.clear());
 
     if (mounted) {
@@ -196,10 +172,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       );
     }
   }
-
-  // -------------------------------------------------------------------------
-  // Build
-  // -------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -237,31 +209,32 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       ),
       body: AppPageBackground(
         child: workersAsync.when(
-        loading: () => const LoadingView(message: 'Loading workers…'),
-        error: (e, _) => ErrorView(
-          message: 'Failed to load workers: $e',
-          onRetry: () => ref.invalidate(_attendanceWorkersProvider(siteId)),
-        ),
-        data: (workers) {
-          if (workers.isEmpty) {
-            return const EmptyView(
-              message: 'No active workers on this site.\nAdd workers in the Roster screen.',
-            );
-          }
-          return existingAsync.when(
-            loading: () => const LoadingView(message: 'Loading attendance…'),
-            error: (e, _) => ErrorView(
-              message: 'Failed to load attendance: $e',
-              onRetry: () => ref.invalidate(
-                _existingAttendanceProvider(
-                  _AttendanceKey(siteId, _selectedDate),
+          loading: () => const LoadingView(message: 'Loading workers…'),
+          error: (e, _) => ErrorView(
+            message: 'Failed to load workers: $e',
+            onRetry: () => ref.invalidate(_attendanceWorkersProvider(siteId)),
+          ),
+          data: (workers) {
+            if (workers.isEmpty) {
+              return const EmptyView(
+                message: 'No active workers on this site.\nAdd workers in the Roster screen.',
+              );
+            }
+            return existingAsync.when(
+              loading: () => const LoadingView(message: 'Loading attendance…'),
+              error: (e, _) => ErrorView(
+                message: 'Failed to load attendance: $e',
+                onRetry: () => ref.invalidate(
+                  _existingAttendanceProvider(
+                    _AttendanceKey(siteId, _selectedDate),
+                  ),
                 ),
               ),
-            ),
-            data: (existing) => _buildBody(context, siteId, workers, existing),
-          );
-        },
-      ),
+              data: (existing) =>
+                  _buildBody(context, siteId, workers, existing),
+            );
+          },
+        ),
       ),
     );
   }
@@ -274,7 +247,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   ) {
     final repo = ref.read(attendanceRepositoryProvider);
 
-    // Live counters
     int present = 0, half = 0, absent = 0;
     for (final w in workers) {
       final s = _effectiveStatus(w.id, existing);
@@ -292,7 +264,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
     return Column(
       children: [
-        // ── Date selector ──────────────────────────────────────────────
         InkWell(
           key: const Key('date_picker_button'),
           onTap: () => _pickDate(context),
@@ -320,7 +291,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           ),
         ),
 
-        // ── Summary counters ───────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
@@ -348,8 +318,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               const Spacer(),
               Text(
                 '${workers.length} workers',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -357,7 +329,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
         const Divider(height: 1),
 
-        // ── Worker list ────────────────────────────────────────────────
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.only(bottom: 100),
@@ -379,7 +350,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           ),
         ),
 
-        // ── Save button ────────────────────────────────────────────────
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -404,10 +374,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Worker attendance tile
-// ---------------------------------------------------------------------------
 
 class _WorkerAttendanceTile extends StatelessWidget {
   final Worker worker;
@@ -481,10 +447,6 @@ class _WorkerAttendanceTile extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Counter chip
-// ---------------------------------------------------------------------------
 
 class _CounterChip extends StatelessWidget {
   final String label;

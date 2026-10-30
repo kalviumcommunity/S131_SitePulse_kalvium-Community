@@ -1,48 +1,31 @@
 import 'package:flutter/material.dart';
 
-/// Modern SaaS Design System — "Zinc + Violet" Edition
-/// Linear / Vercel-inspired aesthetic:
-/// - Zinc-50 warm neutral canvas (barely-there off-white)
-/// - Zinc-950 near-perfect-black header — sharp authority
-/// - Deep Violet-700 primary — premium, modern, zero blue
-/// - White crisp cards with Zinc-200 hairline borders
 class AppColors {
-  // Primary: Deep Violet (zero blue, very modern 2024-25 SaaS)
-  static const primary = Color(0xFF7C3AED); // Violet-700
-  static const primaryDark = Color(0xFF6D28D9); // Violet-800
-  static const primaryLight = Color(0xFFA78BFA); // Violet-400
+  static const primary = Color(0xFF7C3AED);
+  static const primaryDark = Color(0xFF6D28D9);
+  static const primaryLight = Color(0xFFA78BFA);
 
-  // Canvas & Surfaces — Zinc neutrals
-  static const surface = Color(0xFFFAFAFA); // Zinc-50 — barely-there off-white
-  static const surfaceContainer = Color(0xFFF4F4F5); // Zinc-100 — input fill
-  static const cardBackground = Color(0xFFFFFFFF); // Pure crisp white card
-  static const headerBackground = Color(
-    0xFF09090B,
-  ); // Zinc-950 — near-perfect black
+  static const surface = Color(0xFFFAFAFA);
+  static const surfaceContainer = Color(0xFFF4F4F5);
+  static const cardBackground = Color(0xFFFFFFFF);
+  static const headerBackground = Color(0xFF09090B);
 
-  // Typography
-  static const textPrimary = Color(0xFF09090B); // Zinc-950 — deep sharp text
-  static const textSecondary = Color.fromARGB(
-    255,
-    56,
-    56,
-    61,
-  ); // Zinc-500 — clean muted subtext
-  static const border = Color(0xFFE4E4E7); // Zinc-200 — crisp hairline border
+  static const textPrimary = Color(0xFF09090B);
+  static const textSecondary = Color.fromARGB(255, 56, 56, 61);
+  static const border = Color(0xFFE4E4E7);
 
-  // Status Indicators
-  static const critical = Color(0xFFDC2626); // Red-600
-  static const warning = Color(0xFFD97706); // Amber-600
-  static const success = Color(0xFF16A34A); // Green-600
+  static const critical = Color(0xFFDC2626);
+  static const warning = Color(0xFFD97706);
+  static const success = Color(0xFF16A34A);
 }
 
 ThemeData buildTheme() {
   const colorScheme = ColorScheme.light(
     primary: AppColors.primary,
     onPrimary: Colors.white,
-    primaryContainer: Color(0xFFEDE9FE), // Violet-100
-    onPrimaryContainer: Color(0xFF3B0764), // Violet-950
-    secondary: Color(0xFFA78BFA), // Violet-400
+    primaryContainer: Color(0xFFEDE9FE),
+    onPrimaryContainer: Color(0xFF3B0764),
+    secondary: Color(0xFFA78BFA),
     onSecondary: Color(0xFF1E0048),
     surface: AppColors.surface,
     onSurface: AppColors.textPrimary,
@@ -59,7 +42,6 @@ ThemeData buildTheme() {
     scaffoldBackgroundColor: AppColors.surface,
     cardColor: AppColors.cardBackground,
 
-    // Zinc-950 near-black AppBar — ultra-sharp premium
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.headerBackground,
       foregroundColor: Colors.white,
@@ -75,7 +57,6 @@ ThemeData buildTheme() {
       actionsIconTheme: IconThemeData(color: Colors.white),
     ),
 
-    // Clean white cards with Zinc-200 border — no shadow, flat precision
     cardTheme: CardThemeData(
       color: AppColors.cardBackground,
       elevation: 0,
@@ -86,7 +67,6 @@ ThemeData buildTheme() {
       ),
     ),
 
-    // Deep Violet filled button
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
@@ -112,7 +92,6 @@ ThemeData buildTheme() {
       ),
     ),
 
-    // Clean white inputs with Zinc-200 border, violet focus ring
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: Colors.white,
@@ -136,7 +115,6 @@ ThemeData buildTheme() {
       ),
     ),
 
-    // Zinc-950 snackbar — sharp and legible
     snackBarTheme: SnackBarThemeData(
       backgroundColor: AppColors.headerBackground,
       contentTextStyle: const TextStyle(

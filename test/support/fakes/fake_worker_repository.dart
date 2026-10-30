@@ -6,7 +6,6 @@ import 'package:site_pulse/data/repositories/worker_repository.dart';
 
 class FakeWorkerRepository implements WorkerRepository {
   static List<Worker> get defaultWorkers => [
-    // Site 1 workers (~10)
     const Worker(
       id: 'w-101',
       name: 'Ramesh Patel',
@@ -88,7 +87,6 @@ class FakeWorkerRepository implements WorkerRepository {
       siteId: 'site-1',
     ),
 
-    // Site 2 workers (~10)
     const Worker(
       id: 'w-201',
       name: 'Pankaj Roy',
@@ -170,7 +168,6 @@ class FakeWorkerRepository implements WorkerRepository {
       siteId: 'site-2',
     ),
 
-    // Site 3 workers (~10)
     const Worker(
       id: 'w-301',
       name: 'Sanjay Reddy',
@@ -253,7 +250,6 @@ class FakeWorkerRepository implements WorkerRepository {
     ),
   ];
 
-  // Map siteId -> (workerId -> Worker)
   final Map<String, Map<String, Worker>> _workersBySite = {};
   final StreamController<void> _changeController =
       StreamController<void>.broadcast();

@@ -7,15 +7,7 @@ import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:site_pulse/data/repositories/attendance_repository.dart';
 import 'package:site_pulse/data/repositories/firestore_site_repository.dart';
 
-/// Real Firestore-backed [AttendanceRepository].
-///
-/// Attendance lives at `sites/{siteId}/attendance/{siteId_workerId_yyyymmdd}`.
-///
-/// The `dateKey` field (yyyy-MM-dd string) is used for range filtering —
-/// no composite index needed because we filter only on `dateKey`.
-///
-/// [recordBulkAttendance] writes all entries plus the parent site's
-/// `lastEntryAt` in a single [WriteBatch].
+/// Local yyyy-MM-dd date keys preserve calendar-day ranges without timezone drift.
 class FirestoreAttendanceRepository implements AttendanceRepository {
   FirestoreAttendanceRepository({
     FirebaseFirestore? firestore,
@@ -36,8 +28,6 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
 
   String get _currentUid => _auth.currentUser?.uid ?? '';
 
-  // ── Reads ──────────────────────────────────────────────────────────────
-
   @override
   Stream<List<AttendanceEntry>> watchAttendance({
     String? siteId,
@@ -53,7 +43,6 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
       );
     }
 
-    // If siteId is provided, query within that site's subcollection.
     if (siteId != null) {
       return _watchSiteAttendance(
         siteId: siteId,
@@ -63,7 +52,6 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
       );
     }
 
-    // PM cross-site reads are combined from one listener per site.
     return _watchAllSitesAttendance(
       date: date,
       startDate: startDate,
@@ -85,7 +73,6 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
           .where('dateKey', isGreaterThanOrEqualTo: dateKey)
           .where('dateKey', isLessThanOrEqualTo: dateKey);
     } else {
-      // Range filter
       if (startDate != null) {
         final fromKey = AttendanceEntry.dateKeyFromDate(startDate);
         query = query.where('dateKey', isGreaterThanOrEqualTo: fromKey);
@@ -128,8 +115,6 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
     );
   }
 
-  // ── Writes (fire-and-forget) ───────────────────────────────────────────
-
   @override
   String recordAttendance(AttendanceEntry entry) {
     final siteId = entry.effectiveSiteId;
@@ -169,7 +154,6 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
       SetOptions(merge: true),
     );
 
-    // Also update site lastEntryAt
     batch.set(_db.collection('sites').doc(siteId), {
       'lastEntryAt': Timestamp.now(),
     }, SetOptions(merge: true));
@@ -238,7 +222,6 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
       ids.add(id);
     }
 
-    // Update lastEntryAt for every affected site in the same batch
     final now = Timestamp.now();
     for (final siteId in updatedSiteIds) {
       batch.set(_db.collection('sites').doc(siteId), {
@@ -256,8 +239,6 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
 
     return ids;
   }
-
-  // ── Error stream ───────────────────────────────────────────────────────
 
   @override
   Stream<RepositoryError> get errorStream => _errorController.stream;

@@ -6,6 +6,7 @@ import 'package:site_pulse/data/models/attendance_entry.dart';
 import 'package:site_pulse/data/models/material_log.dart';
 import 'package:site_pulse/data/models/site.dart';
 import 'package:site_pulse/features/pm/site_detail/pm_site_detail_screen.dart';
+
 import '../../support/fakes/fakes.dart';
 import '../../support/test_overrides.dart';
 
@@ -129,9 +130,7 @@ void main() {
           ),
         ],
       );
-      await tester.pumpWidget(
-        buildSiteDetailApp(attendanceRepo: repository),
-      );
+      await tester.pumpWidget(buildSiteDetailApp(attendanceRepo: repository));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -148,18 +147,14 @@ void main() {
       );
       expect(
         find.byKey(
-          Key(
-            'attendance_chart_bar_${AttendanceEntry.dateKeyFromDate(today)}',
-          ),
+          Key('attendance_chart_bar_${AttendanceEntry.dateKeyFromDate(today)}'),
         ),
         findsOneWidget,
       );
       expect(
         find.byKey(
           Key(
-            'attendance_chart_bar_${AttendanceEntry.dateKeyFromDate(
-              today.subtract(const Duration(days: 6)),
-            )}',
+            'attendance_chart_bar_${AttendanceEntry.dateKeyFromDate(today.subtract(const Duration(days: 6)))}',
           ),
         ),
         findsOneWidget,
@@ -183,9 +178,7 @@ void main() {
           ),
         ],
       );
-      await tester.pumpWidget(
-        buildSiteDetailApp(attendanceRepo: repository),
-      );
+      await tester.pumpWidget(buildSiteDetailApp(attendanceRepo: repository));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -265,7 +258,6 @@ void main() {
       expect(find.byKey(const Key('tab_attendance_view')), findsOneWidget);
       expect(find.byType(ExpansionTile), findsWidgets);
 
-      // Tap first expansion tile to view worker breakdown
       await tester.tap(find.byType(ExpansionTile).first);
       await tester.pumpAndSettle();
 
@@ -279,7 +271,6 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Switch to Materials Tab
         await tester.tap(find.byKey(const Key('tab_materials')));
         await tester.pumpAndSettle();
 
@@ -296,7 +287,6 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Switch to Incidents Tab
         await tester.tap(find.byKey(const Key('tab_incidents')));
         await tester.pumpAndSettle();
 

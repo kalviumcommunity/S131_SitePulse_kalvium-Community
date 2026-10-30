@@ -9,10 +9,6 @@ import 'package:site_pulse/data/repositories/material_repository.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:uuid/uuid.dart';
 
-/// Real Firestore-backed [MaterialRepository].
-///
-/// Material data is stored below `sites/{siteId}/materials` and usage logs
-/// below `sites/{siteId}/materialLogs`.
 class FirestoreMaterialRepository implements MaterialRepository {
   FirestoreMaterialRepository({
     FirebaseFirestore? firestore,
@@ -222,6 +218,7 @@ class FirestoreMaterialRepository implements MaterialRepository {
 
     final effectiveDate = date ?? DateTime.now();
     final remainingAfter = known.material.currentStock - qtyUsed;
+    // A batch and increment keep the log and stock update atomic without a transaction.
     final batch = _db.batch();
     batch.set(_logsCol(known.siteId).doc(id), {
       'materialId': materialId,

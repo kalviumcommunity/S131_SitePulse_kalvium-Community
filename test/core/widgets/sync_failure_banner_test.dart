@@ -8,6 +8,7 @@ import 'package:site_pulse/data/providers.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:site_pulse/data/repositories/write_failure_sink.dart';
 import 'package:site_pulse/features/auth/auth_controller.dart';
+
 import '../../support/fakes/fake_auth_repository.dart';
 import '../../support/fakes/fake_sync_status_repository.dart';
 import '../../support/test_overrides.dart';

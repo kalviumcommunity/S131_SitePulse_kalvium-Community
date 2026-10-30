@@ -8,10 +8,7 @@ import 'package:site_pulse/data/repositories/incident_repository.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:uuid/uuid.dart';
 
-/// Real Firestore-backed [IncidentRepository].
-///
-/// Incidents are immutable client-created records under
-/// `sites/{siteId}/incidents`.
+/// Incidents are immutable so the original event record remains unchanged.
 class FirestoreIncidentRepository implements IncidentRepository {
   FirestoreIncidentRepository({
     FirebaseFirestore? firestore,

@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Full-screen or container loading state with a progress indicator and optional message.
 class LoadingView extends StatelessWidget {
-  const LoadingView({
-    super.key,
-    this.message = 'Loading...',
-  });
+  const LoadingView({super.key, this.message = 'Loading...'});
 
   final String? message;
 
@@ -23,9 +19,8 @@ class LoadingView extends StatelessWidget {
               Text(
                 message!,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey.shade700,
-                    ),
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: Colors.grey.shade700),
               ),
             ],
           ],

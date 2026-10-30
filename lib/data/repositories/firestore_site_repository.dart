@@ -5,13 +5,6 @@ import 'package:site_pulse/data/models/site.dart';
 import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:site_pulse/data/repositories/site_repository.dart';
 
-/// Real Firestore-backed [SiteRepository].
-///
-/// Read pattern: `snapshots(includeMetadataChanges: true)` so we can surface
-/// `hasPendingWrites` to the UI via [Site.hasPendingWrites].
-///
-/// Write pattern: fire-and-forget with `batch.commit()` — never awaited by
-/// the caller.  Write failures are pushed onto [errorStream].
 class FirestoreSiteRepository implements SiteRepository {
   FirestoreSiteRepository({
     FirebaseFirestore? firestore,
@@ -26,8 +19,6 @@ class FirestoreSiteRepository implements SiteRepository {
 
   CollectionReference<Map<String, dynamic>> get _sitesCol =>
       _db.collection('sites');
-
-  // ── Reads ──────────────────────────────────────────────────────────────
 
   @override
   Stream<List<Site>> watchSites() {
@@ -58,8 +49,6 @@ class FirestoreSiteRepository implements SiteRepository {
       );
     });
   }
-
-  // ── Error stream ───────────────────────────────────────────────────────
 
   @override
   Stream<RepositoryError> get errorStream => _errorController.stream;

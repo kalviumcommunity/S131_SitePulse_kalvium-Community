@@ -93,7 +93,6 @@ void main() {
       expect(initial, isNotNull);
       final initialStock = initial!.currentStock;
 
-      // Fire and forget write returns id immediately
       final logId = repo.logUsage(materialId: 'mat-2', qtyUsed: 10.0);
       expect(logId, isNotEmpty);
 
@@ -208,7 +207,6 @@ void main() {
         final sub = repo.errorStream.listen(errors.add);
         addTearDown(sub.cancel);
 
-        // Invalid materialId: should emit error to stream
         final logId = repo.logUsage(materialId: 'non-existent', qtyUsed: 5.0);
         expect(logId, isNotEmpty);
 

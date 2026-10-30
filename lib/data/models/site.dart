@@ -59,12 +59,10 @@ class Site {
       id: map['id'] as String? ?? '',
       name: map['name'] as String? ?? '',
       lastEntryAt: _parseDateTime(map['lastEntryAt']),
-      hasPendingWrites:
-          (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
+      hasPendingWrites: (map['hasPendingWrites'] as bool?) ?? hasPendingWrites,
     );
   }
 
-  /// Firestore document data (excludes id and hasPendingWrites).
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
@@ -72,7 +70,6 @@ class Site {
     };
   }
 
-  /// Construct from a Firestore document snapshot.
   factory Site.fromFirestore(
     String docId,
     Map<String, dynamic> data, {

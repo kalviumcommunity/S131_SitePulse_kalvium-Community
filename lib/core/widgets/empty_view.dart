@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 
-/// Empty state widget displaying an explanatory message and an optional CTA action button.
 class EmptyView extends StatelessWidget {
   const EmptyView({
     super.key,
@@ -24,18 +23,13 @@ class EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 56,
-              color: Colors.grey.shade400,
-            ),
+            Icon(icon, size: 56, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey.shade700,
-                  ),
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(color: Colors.grey.shade700),
             ),
             if (ctaLabel != null && onCta != null) ...[
               const SizedBox(height: 20),

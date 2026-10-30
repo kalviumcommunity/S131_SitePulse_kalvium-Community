@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/data/models/app_user.dart';
-import 'package:site_pulse/data/repositories/auth_repository.dart' as repository;
+import 'package:site_pulse/data/repositories/auth_repository.dart'
+    as repository;
 import 'package:site_pulse/features/auth/login_screen.dart';
+
 import '../../support/fakes/fake_auth_repository.dart';
 import '../../support/test_overrides.dart';
 
@@ -37,19 +39,17 @@ Widget createTestWidget({
         delaySignIn: delaySignIn,
       ),
     ),
-    child: MaterialApp(
-      theme: buildTheme(),
-      home: const LoginScreen(),
-    ),
+    child: MaterialApp(theme: buildTheme(), home: const LoginScreen()),
   );
 }
 
 void main() {
   group('LoginScreen Form Validation Tests', () {
-    testWidgets('shows validation errors when fields are empty', (tester) async {
+    testWidgets('shows validation errors when fields are empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
 
-      // Tap Sign In without filling in any fields
       await tester.tap(find.byKey(const Key('sign_in_button')));
       await tester.pumpAndSettle();
 
@@ -60,8 +60,14 @@ void main() {
     testWidgets('shows validation error when email is invalid', (tester) async {
       await tester.pumpWidget(createTestWidget());
 
-      await tester.enterText(find.byKey(const Key('email_field')), 'not-an-email');
-      await tester.enterText(find.byKey(const Key('password_field')), 'SomePassword123');
+      await tester.enterText(
+        find.byKey(const Key('email_field')),
+        'not-an-email',
+      );
+      await tester.enterText(
+        find.byKey(const Key('password_field')),
+        'SomePassword123',
+      );
 
       await tester.tap(find.byKey(const Key('sign_in_button')));
       await tester.pumpAndSettle();
@@ -74,35 +80,40 @@ void main() {
       await tester.pumpWidget(createTestWidget());
 
       final passwordFinder = find.byKey(const Key('password_field'));
-      TextField textField = tester.widget(find.descendant(
-        of: passwordFinder,
-        matching: find.byType(TextField),
-      ));
+      TextField textField = tester.widget(
+        find.descendant(of: passwordFinder, matching: find.byType(TextField)),
+      );
       expect(textField.obscureText, isTrue);
 
-      // Tap visibility toggle
       await tester.tap(find.byKey(const Key('password_visibility_button')));
       await tester.pumpAndSettle();
 
-      textField = tester.widget(find.descendant(
-        of: passwordFinder,
-        matching: find.byType(TextField),
-      ));
+      textField = tester.widget(
+        find.descendant(of: passwordFinder, matching: find.byType(TextField)),
+      );
       expect(textField.obscureText, isFalse);
     });
   });
 
   group('LoginScreen Error Mapping Tests', () {
     testWidgets('displays inline error for invalidCredentials', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        failure: const repository.AuthFailure(
-          code: repository.AuthFailureCode.invalidCredentials,
-          message: 'Invalid credentials',
+      await tester.pumpWidget(
+        createTestWidget(
+          failure: const repository.AuthFailure(
+            code: repository.AuthFailureCode.invalidCredentials,
+            message: 'Invalid credentials',
+          ),
         ),
-      ));
+      );
 
-      await tester.enterText(find.byKey(const Key('email_field')), 'user@sitepulse.test');
-      await tester.enterText(find.byKey(const Key('password_field')), 'WrongPass');
+      await tester.enterText(
+        find.byKey(const Key('email_field')),
+        'user@sitepulse.test',
+      );
+      await tester.enterText(
+        find.byKey(const Key('password_field')),
+        'WrongPass',
+      );
       await tester.tap(find.byKey(const Key('sign_in_button')));
       await tester.pumpAndSettle();
 
@@ -110,15 +121,23 @@ void main() {
     });
 
     testWidgets('displays inline error for noNetwork', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        failure: const repository.AuthFailure(
-          code: repository.AuthFailureCode.noNetwork,
-          message: 'No network',
+      await tester.pumpWidget(
+        createTestWidget(
+          failure: const repository.AuthFailure(
+            code: repository.AuthFailureCode.noNetwork,
+            message: 'No network',
+          ),
         ),
-      ));
+      );
 
-      await tester.enterText(find.byKey(const Key('email_field')), 'user@sitepulse.test');
-      await tester.enterText(find.byKey(const Key('password_field')), 'SitePulse#2026');
+      await tester.enterText(
+        find.byKey(const Key('email_field')),
+        'user@sitepulse.test',
+      );
+      await tester.enterText(
+        find.byKey(const Key('password_field')),
+        'SitePulse#2026',
+      );
       await tester.tap(find.byKey(const Key('sign_in_button')));
       await tester.pumpAndSettle();
 
@@ -126,31 +145,50 @@ void main() {
     });
 
     testWidgets('displays inline error for accountNotSetUp', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        failure: const repository.AuthFailure(
-          code: repository.AuthFailureCode.accountNotSetUp,
-          message: 'Account not set up',
+      await tester.pumpWidget(
+        createTestWidget(
+          failure: const repository.AuthFailure(
+            code: repository.AuthFailureCode.accountNotSetUp,
+            message: 'Account not set up',
+          ),
         ),
-      ));
+      );
 
-      await tester.enterText(find.byKey(const Key('email_field')), 'unknown@sitepulse.test');
-      await tester.enterText(find.byKey(const Key('password_field')), 'SitePulse#2026');
+      await tester.enterText(
+        find.byKey(const Key('email_field')),
+        'unknown@sitepulse.test',
+      );
+      await tester.enterText(
+        find.byKey(const Key('password_field')),
+        'SitePulse#2026',
+      );
       await tester.tap(find.byKey(const Key('sign_in_button')));
       await tester.pumpAndSettle();
 
-      expect(find.text('This account is not set up. Contact your admin.'), findsOneWidget);
+      expect(
+        find.text('This account is not set up. Contact your admin.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('displays inline error for unknown failure', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        failure: const repository.AuthFailure(
-          code: repository.AuthFailureCode.unknown,
-          message: 'Unknown error',
+      await tester.pumpWidget(
+        createTestWidget(
+          failure: const repository.AuthFailure(
+            code: repository.AuthFailureCode.unknown,
+            message: 'Unknown error',
+          ),
         ),
-      ));
+      );
 
-      await tester.enterText(find.byKey(const Key('email_field')), 'user@sitepulse.test');
-      await tester.enterText(find.byKey(const Key('password_field')), 'SitePulse#2026');
+      await tester.enterText(
+        find.byKey(const Key('email_field')),
+        'user@sitepulse.test',
+      );
+      await tester.enterText(
+        find.byKey(const Key('password_field')),
+        'SitePulse#2026',
+      );
       await tester.tap(find.byKey(const Key('sign_in_button')));
       await tester.pumpAndSettle();
 
@@ -158,20 +196,23 @@ void main() {
     });
 
     testWidgets('shows loading indicator while signing in', (tester) async {
-      await tester.pumpWidget(createTestWidget(
-        delaySignIn: true,
-      ));
+      await tester.pumpWidget(createTestWidget(delaySignIn: true));
 
-      await tester.enterText(find.byKey(const Key('email_field')), 'sup1@sitepulse.test');
-      await tester.enterText(find.byKey(const Key('password_field')), 'SitePulse#2026');
+      await tester.enterText(
+        find.byKey(const Key('email_field')),
+        'sup1@sitepulse.test',
+      );
+      await tester.enterText(
+        find.byKey(const Key('password_field')),
+        'SitePulse#2026',
+      );
 
       await tester.tap(find.byKey(const Key('sign_in_button')));
       await tester.pump(); // Start async sign in
 
-      // Loading spinner is present
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-      await tester.pumpAndSettle(); // Finish sign in
+      await tester.pumpAndSettle();
     });
   });
 }

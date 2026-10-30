@@ -17,7 +17,6 @@ import 'features/supervisor/attendance/attendance_screen.dart';
 import 'features/supervisor/material/material_usage_screen.dart';
 import 'features/supervisor/incident/incident_screen.dart';
 
-/// Converts a Stream into a Listenable for GoRouter refreshListenable
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
@@ -52,24 +51,20 @@ GoRouter buildRouter({
       final location = state.matchedLocation;
       final isLoggingIn = location == '/login';
 
-      // 1. Signed out -> must go to /login
       if (user == null) {
         return isLoggingIn ? null : '/login';
       }
 
-      // 2. Signed in trying to access /login or / -> redirect to role home
       if (isLoggingIn || location == '/') {
         return user.role == UserRole.supervisor
             ? '/supervisor/home'
             : '/pm/dashboard';
       }
 
-      // 3. Supervisor must be redirected away from any /pm route
       if (user.role == UserRole.supervisor && location.startsWith('/pm')) {
         return '/supervisor/home';
       }
 
-      // 4. PM must be redirected away from any /supervisor route
       if (user.role == UserRole.pm && location.startsWith('/supervisor')) {
         return '/pm/dashboard';
       }

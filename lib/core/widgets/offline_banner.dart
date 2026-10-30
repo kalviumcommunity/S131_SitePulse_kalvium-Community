@@ -2,13 +2,9 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 
-/// Top banner that listens to network connectivity.
-/// When offline: shows "Offline - entries are saved on this device".
-/// When online: hidden (SizedBox.shrink).
 class OfflineBanner extends StatefulWidget {
   const OfflineBanner({super.key, this.overrideOffline});
 
-  /// Optional override for testing offline state without platform channels.
   final bool? overrideOffline;
 
   @override

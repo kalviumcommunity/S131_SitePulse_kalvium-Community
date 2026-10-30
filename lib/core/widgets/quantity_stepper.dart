@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 
-/// Quantity stepper with large tap targets (48dp+) for decrementing/incrementing a number.
-/// Enforces min and max bounds.
 class QuantityStepper extends StatelessWidget {
   const QuantityStepper({
     super.key,
@@ -37,7 +35,6 @@ class QuantityStepper extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Decrement button
         SizedBox(
           width: 52,
           height: 52,
@@ -59,7 +56,6 @@ class QuantityStepper extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 16),
-        // Number and unit in the middle
         Container(
           constraints: const BoxConstraints(minWidth: 100),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -93,7 +89,6 @@ class QuantityStepper extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 16),
-        // Increment button
         SizedBox(
           width: 52,
           height: 52,

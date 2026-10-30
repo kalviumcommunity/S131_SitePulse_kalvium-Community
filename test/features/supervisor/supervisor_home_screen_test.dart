@@ -12,6 +12,7 @@ import 'package:site_pulse/data/models/material.dart' as sp;
 import 'package:site_pulse/data/models/material_log.dart';
 import 'package:site_pulse/data/models/site.dart';
 import 'package:site_pulse/features/supervisor/home/supervisor_home_screen.dart';
+
 import '../../support/fakes/fakes.dart';
 import '../../support/test_overrides.dart';
 
@@ -152,7 +153,6 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Test Attendance Navigation
       await tester.tap(find.byKey(const Key('action_attendance')));
       await tester.pumpAndSettle();
       expect(find.text('Attendance Route'), findsOneWidget);
@@ -209,9 +209,11 @@ void main() {
       tester,
     ) async {
       final now = DateTime.now();
-      final yesterday = DateTime(now.year, now.month, now.day).subtract(
-        const Duration(days: 1),
-      );
+      final yesterday = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(const Duration(days: 1));
       final attendanceRepo = FakeAttendanceRepository(
         initialAttendance: [
           AttendanceEntry(
@@ -268,7 +270,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text(DateFormat('d MMM').format(yesterday)), findsNWidgets(2));
+      expect(
+        find.text(DateFormat('d MMM').format(yesterday)),
+        findsNWidgets(2),
+      );
       expect(find.textContaining('00:00'), findsNothing);
       expect(find.text('30 mins ago'), findsOneWidget);
     });

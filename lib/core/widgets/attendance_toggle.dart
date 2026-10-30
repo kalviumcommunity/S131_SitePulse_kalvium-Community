@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:site_pulse/core/theme/app_theme.dart';
 import 'package:site_pulse/data/models/attendance_entry.dart';
 
-/// Three-way attendance toggle: Present / Half-day / Absent.
-/// Uses icon + label for accessibility and ensures at least 48dp tap target size.
 class AttendanceToggle extends StatelessWidget {
   const AttendanceToggle({
     super.key,
@@ -75,7 +73,10 @@ class AttendanceToggle extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected ? color : color.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
@@ -97,7 +98,9 @@ class AttendanceToggle extends StatelessWidget {
                         label,
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w600,
                           color: isSelected ? Colors.white : color,
                         ),
                       ),

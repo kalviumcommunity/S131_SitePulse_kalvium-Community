@@ -7,7 +7,6 @@ import 'package:site_pulse/data/repositories/repository_error.dart';
 
 class FakeMaterialRepository implements MaterialRepository {
   static List<Material> get defaultMaterials => [
-    // One below threshold: currentStock 15 <= lowStockThreshold 25
     const Material(
       id: 'mat-1',
       name: 'Portland Cement (50kg)',

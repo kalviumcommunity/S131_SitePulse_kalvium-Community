@@ -14,10 +14,6 @@ import 'package:site_pulse/data/models/material_log.dart';
 import 'package:site_pulse/data/providers.dart';
 import 'package:uuid/uuid.dart';
 
-// ---------------------------------------------------------------------------
-// Providers
-// ---------------------------------------------------------------------------
-
 final _materialsProvider = StreamProvider.autoDispose
     .family<List<sp.Material>, String>((ref, siteId) {
       return ref
@@ -31,10 +27,6 @@ final _materialLogsProvider = StreamProvider.autoDispose
           .watch(materialRepositoryProvider)
           .watchMaterialLogs(siteId: siteId);
     });
-
-// ---------------------------------------------------------------------------
-// Screen
-// ---------------------------------------------------------------------------
 
 class MaterialUsageScreen extends ConsumerStatefulWidget {
   const MaterialUsageScreen({super.key});
@@ -82,7 +74,7 @@ class _MaterialUsageScreenState extends ConsumerState<MaterialUsageScreen> {
       siteId: siteId,
       date: DateTime.now(),
       logId: logId,
-    ); // fire-and-forget ✅
+    ); // Do not await so Firestore can queue writes while offline.
     setState(() => _qty = 1.0);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -144,218 +136,209 @@ class _MaterialUsageScreenState extends ConsumerState<MaterialUsageScreen> {
       ),
       body: AppPageBackground(
         child: materialsAsync.when(
-        loading: () => const LoadingView(message: 'Loading materials…'),
-        error: (e, _) => ErrorView(
-          message: 'Failed to load materials: $e',
-          onRetry: () => ref.invalidate(_materialsProvider(siteId)),
-        ),
-        data: (materials) {
-          if (materials.isEmpty) {
-            return const EmptyView(
-              message: 'No materials found for this site.',
+          loading: () => const LoadingView(message: 'Loading materials…'),
+          error: (e, _) => ErrorView(
+            message: 'Failed to load materials: $e',
+            onRetry: () => ref.invalidate(_materialsProvider(siteId)),
+          ),
+          data: (materials) {
+            if (materials.isEmpty) {
+              return const EmptyView(
+                message: 'No materials found for this site.',
+              );
+            }
+
+            if (_selectedMaterialKey == null ||
+                !materials.any(
+                  (m) => _materialKey(siteId, m.id) == _selectedMaterialKey,
+                )) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _selectedMaterialKey = _materialKey(
+                      siteId,
+                      materials.first.id,
+                    );
+                  });
+                }
+              });
+            }
+
+            final selected = materials.firstWhere(
+              (m) => _materialKey(siteId, m.id) == _selectedMaterialKey,
+              orElse: () => materials.first,
             );
-          }
 
-          // Default selection
-          if (_selectedMaterialKey == null ||
-              !materials.any(
-                (m) => _materialKey(siteId, m.id) == _selectedMaterialKey,
-              )) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                setState(() {
-                  _selectedMaterialKey = _materialKey(
-                    siteId,
-                    materials.first.id,
-                  );
-                });
-              }
-            });
-          }
+            final projectedRemaining = (selected.currentStock - _qty).clamp(
+              0.0,
+              selected.currentStock,
+            );
+            final lowStock = isLowStock(selected);
+            final willBeLowest =
+                projectedRemaining <= selected.lowStockThreshold;
 
-          final selected = materials.firstWhere(
-            (m) => _materialKey(siteId, m.id) == _selectedMaterialKey,
-            orElse: () => materials.first,
-          );
+            return logsAsync.when(
+              loading: () => const LoadingView(message: 'Loading logs…'),
+              error: (e, _) => ErrorView(
+                message: 'Failed to load logs: $e',
+                onRetry: () => ref.invalidate(_materialLogsProvider(siteId)),
+              ),
+              data: (allLogs) {
+                final recentLogs =
+                    allLogs
+                        .where(
+                          (l) =>
+                              l.siteId == siteId && l.materialId == selected.id,
+                        )
+                        .toList()
+                      ..sort((a, b) => b.date.compareTo(a.date));
 
-          final projectedRemaining = (selected.currentStock - _qty).clamp(
-            0.0,
-            selected.currentStock,
-          );
-          final lowStock = isLowStock(selected);
-          final willBeLowest = projectedRemaining <= selected.lowStockThreshold;
+                return Column(
+                  children: [
+                    if (lowStock)
+                      _LowStockBanner(
+                        materialName: selected.name,
+                        current: selected.currentStock,
+                        threshold: selected.lowStockThreshold,
+                        unit: selected.unit,
+                      ),
 
-          return logsAsync.when(
-            loading: () => const LoadingView(message: 'Loading logs…'),
-            error: (e, _) => ErrorView(
-              message: 'Failed to load logs: $e',
-              onRetry: () => ref.invalidate(_materialLogsProvider(siteId)),
-            ),
-            data: (allLogs) {
-              final recentLogs =
-                  allLogs
-                      .where(
-                        (l) =>
-                            l.siteId == siteId && l.materialId == selected.id,
-                      )
-                      .toList()
-                    ..sort((a, b) => b.date.compareTo(a.date));
-
-              return Column(
-                children: [
-                  // ── Low-stock alert ─────────────────────────────────
-                  if (lowStock)
-                    _LowStockBanner(
-                      materialName: selected.name,
-                      current: selected.currentStock,
-                      threshold: selected.lowStockThreshold,
-                      unit: selected.unit,
-                    ),
-
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // ── Material dropdown ────────────────────────
-                          _SectionLabel(label: 'Select Material'),
-                          const SizedBox(height: 8),
-                          InputDecorator(
-                            decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _SectionLabel(label: 'Select Material'),
+                            const SizedBox(height: 8),
+                            InputDecorator(
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 4,
+                                ),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  key: const Key('material_dropdown'),
+                                  isExpanded: true,
+                                  value: _materialKey(siteId, selected.id),
+                                  items: materials
+                                      .map(
+                                        (m) => DropdownMenuItem<String>(
+                                          value: _materialKey(siteId, m.id),
+                                          child: Row(
+                                            children: [
+                                              Text(m.name),
+                                              const Spacer(),
+                                              if (isLowStock(m))
+                                                const Icon(
+                                                  Icons.warning_amber,
+                                                  size: 16,
+                                                  color: Colors.orange,
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (key) {
+                                    if (key != null) {
+                                      setState(() {
+                                        _selectedMaterialKey = key;
+                                        _qty = 1.0;
+                                      });
+                                    }
+                                  },
+                                ),
                               ),
                             ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                key: const Key('material_dropdown'),
-                                isExpanded: true,
-                                value: _materialKey(siteId, selected.id),
-                                items: materials
-                                    .map(
-                                      (m) => DropdownMenuItem<String>(
-                                        value: _materialKey(siteId, m.id),
-                                        child: Row(
-                                          children: [
-                                            Text(m.name),
-                                            const Spacer(),
-                                            if (isLowStock(m))
-                                              const Icon(
-                                                Icons.warning_amber,
-                                                size: 16,
-                                                color: Colors.orange,
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (key) {
-                                  if (key != null) {
-                                    setState(() {
-                                      _selectedMaterialKey = key;
-                                      _qty = 1.0;
-                                    });
-                                  }
+
+                            const SizedBox(height: 20),
+
+                            _StockPreviewCard(
+                              current: selected.currentStock,
+                              projected: projectedRemaining,
+                              unit: selected.unit,
+                              willBeLowest: willBeLowest,
+                              pending: selected.hasPendingWrites,
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            _SectionLabel(label: 'Quantity Used'),
+                            const SizedBox(height: 8),
+                            Center(
+                              child: QuantityStepper(
+                                key: const Key('quantity_stepper'),
+                                value: _qty,
+                                min: 1.0,
+                                max: selected.currentStock.clamp(1.0, 9999.0),
+                                unit: selected.unit,
+                                onChanged: (v) => setState(() => _qty = v),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: FilledButton.icon(
+                                key: const Key('log_usage_button'),
+                                icon: const Icon(Icons.add_task),
+                                label: const Text('Log Usage'),
+                                onPressed: selected.currentStock > 0
+                                    ? () => _logUsage(siteId, selected)
+                                    : null,
+                              ),
+                            ),
+
+                            const SizedBox(height: 28),
+
+                            _SectionLabel(
+                              label: 'Recent Logs — ${selected.name}',
+                            ),
+                            const SizedBox(height: 8),
+
+                            if (recentLogs.isEmpty)
+                              const EmptyView(
+                                message:
+                                    'No usage logged yet for this material.',
+                              )
+                            else
+                              ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: recentLogs.length > 10
+                                    ? 10
+                                    : recentLogs.length,
+                                separatorBuilder: (_, _) =>
+                                    const Divider(height: 1),
+                                itemBuilder: (context, index) {
+                                  final log = recentLogs[index];
+                                  return _LogTile(
+                                    log: log,
+                                    unit: selected.unit,
+                                    formatDate: _formatDate,
+                                  );
                                 },
                               ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // ── Stock preview card ───────────────────────
-                          _StockPreviewCard(
-                            current: selected.currentStock,
-                            projected: projectedRemaining,
-                            unit: selected.unit,
-                            willBeLowest: willBeLowest,
-                            pending: selected.hasPendingWrites,
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // ── Quantity stepper ─────────────────────────
-                          _SectionLabel(label: 'Quantity Used'),
-                          const SizedBox(height: 8),
-                          Center(
-                            child: QuantityStepper(
-                              key: const Key('quantity_stepper'),
-                              value: _qty,
-                              min: 1.0,
-                              max: selected.currentStock.clamp(1.0, 9999.0),
-                              unit: selected.unit,
-                              onChanged: (v) => setState(() => _qty = v),
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // ── Log Usage button ─────────────────────────
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: FilledButton.icon(
-                              key: const Key('log_usage_button'),
-                              icon: const Icon(Icons.add_task),
-                              label: const Text('Log Usage'),
-                              onPressed: selected.currentStock > 0
-                                  ? () => _logUsage(siteId, selected)
-                                  : null,
-                            ),
-                          ),
-
-                          const SizedBox(height: 28),
-
-                          // ── Recent logs ──────────────────────────────
-                          _SectionLabel(
-                            label: 'Recent Logs — ${selected.name}',
-                          ),
-                          const SizedBox(height: 8),
-
-                          if (recentLogs.isEmpty)
-                            const EmptyView(
-                              message: 'No usage logged yet for this material.',
-                            )
-                          else
-                            ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: recentLogs.length > 10
-                                  ? 10
-                                  : recentLogs.length,
-                              separatorBuilder: (_, _) =>
-                                  const Divider(height: 1),
-                              itemBuilder: (context, index) {
-                                final log = recentLogs[index];
-                                return _LogTile(
-                                  log: log,
-                                  unit: selected.unit,
-                                  formatDate: _formatDate,
-                                );
-                              },
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-      ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Low stock banner
-// ---------------------------------------------------------------------------
 
 class _LowStockBanner extends StatelessWidget {
   final String materialName;
@@ -396,10 +379,6 @@ class _LowStockBanner extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Stock preview card
-// ---------------------------------------------------------------------------
 
 class _StockPreviewCard extends StatelessWidget {
   final double current;
@@ -503,10 +482,6 @@ class _StockRow extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Log tile
-// ---------------------------------------------------------------------------
-
 class _LogTile extends StatelessWidget {
   final MaterialLog log;
   final String unit;
@@ -541,10 +516,6 @@ class _LogTile extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Section label
-// ---------------------------------------------------------------------------
 
 class _SectionLabel extends StatelessWidget {
   final String label;

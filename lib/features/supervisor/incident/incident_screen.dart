@@ -13,19 +13,11 @@ import 'package:site_pulse/data/models/incident.dart';
 import 'package:site_pulse/data/providers.dart';
 import 'package:uuid/uuid.dart';
 
-// ---------------------------------------------------------------------------
-// Providers
-// ---------------------------------------------------------------------------
-
 final _supervisorIncidentsProvider = StreamProvider.autoDispose
     .family<List<Incident>, String>((ref, siteId) {
       final repo = ref.watch(incidentRepositoryProvider);
       return repo.watchIncidents(siteId: siteId);
     });
-
-// ---------------------------------------------------------------------------
-// Screen
-// ---------------------------------------------------------------------------
 
 class IncidentScreen extends ConsumerStatefulWidget {
   const IncidentScreen({super.key});
@@ -109,7 +101,8 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
       siteId: siteId,
     );
 
-    repo.reportIncident(incident); // fire-and-forget ✅
+    // Do not await so Firestore can queue writes while offline.
+    repo.reportIncident(incident);
 
     _descriptionController.clear();
     setState(() => _selectedSeverity = Severity.minor);
@@ -199,227 +192,224 @@ class _IncidentScreenState extends ConsumerState<IncidentScreen> {
       ),
       body: AppPageBackground(
         child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── High / Critical Escalation Warning Banner ──────────
-            if (isEscalated)
-              Container(
-                key: const Key('escalation_banner'),
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                color: Colors.red.shade50,
-                child: Row(
-                  children: [
-                    const Icon(Icons.warning, color: AppColors.critical),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'High and critical incidents are flagged on the project manager\'s dashboard after sync.',
-                        style: TextStyle(
-                          color: Colors.red.shade900,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-            // ── Incident Input Form ────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Report New Safety Incident',
-                      style: Theme.of(context).textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Severity Level',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    SeveritySelector(
-                      value: _selectedSeverity,
-                      onChanged: (s) => setState(() => _selectedSeverity = s),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Description',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      key: const Key('incident_description_field'),
-                      controller: _descriptionController,
-                      minLines: 3,
-                      maxLines: 5,
-                      decoration: InputDecoration(
-                        hintText: 'Describe what occurred, hazards, and actions taken (min 10 characters)...',
-                        border: const OutlineInputBorder(),
-                        helperText:
-                            '${_descriptionController.text.trim().length} / 10 min characters',
-                        helperStyle: TextStyle(
-                          color: _isValid
-                              ? AppColors.success
-                              : Colors.grey.shade600,
-                          fontWeight: _isValid
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: FilledButton.icon(
-                        key: const Key('submit_incident_button'),
-                        icon: const Icon(Icons.send),
-                        label: const Text('Submit Incident Report'),
-                        onPressed: _isValid
-                            ? () => _confirmAndSubmit(siteId)
-                            : null,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const Divider(thickness: 8, height: 24),
-
-            // ── Recent Incidents Feed (Read-Only) ──────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Recent Incident Reports',
-                style: Theme.of(context).textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            incidentsAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(32.0),
-                child: LoadingView(message: 'Loading incidents…'),
-              ),
-              error: (e, _) => Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: ErrorView(
-                  message: 'Failed to load incidents: $e',
-                  onRetry: () =>
-                      ref.invalidate(_supervisorIncidentsProvider(siteId)),
-                ),
-              ),
-              data: (incidents) {
-                if (incidents.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(24.0),
-                    child: EmptyView(
-                      message: 'No safety incidents reported for this site.',
-                    ),
-                  );
-                }
-
-                final sorted = incidents.toList()
-                  ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
-
-                return ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isEscalated)
+                Container(
+                  key: const Key('escalation_banner'),
+                  width: double.infinity,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
+                    horizontal: 16,
+                    vertical: 12,
                   ),
-                  itemCount: sorted.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final inc = sorted[index];
-                    final color = _severityColor(inc.severity);
-                    final icon = _severityIcon(inc.severity);
-
-                    return Card(
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: color.withValues(alpha: 0.3)),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(icon, color: color, size: 20),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: color.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    inc.severity.name.toUpperCase(),
-                                    style: TextStyle(
-                                      color: color,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  _formatDate(inc.occurredAt),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                SyncChip(pending: inc.hasPendingWrites),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              inc.description,
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                          ],
+                  color: Colors.red.shade50,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning, color: AppColors.critical),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'High and critical incidents are flagged on the project manager\'s dashboard after sync.',
+                          style: TextStyle(
+                            color: Colors.red.shade900,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Report New Safety Incident',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Severity Level',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SeveritySelector(
+                        value: _selectedSeverity,
+                        onChanged: (s) => setState(() => _selectedSeverity = s),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Description',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        key: const Key('incident_description_field'),
+                        controller: _descriptionController,
+                        minLines: 3,
+                        maxLines: 5,
+                        decoration: InputDecoration(
+                          hintText: 'Describe what occurred, hazards, and actions taken (min 10 characters)...',
+                          border: const OutlineInputBorder(),
+                          helperText:
+                              '${_descriptionController.text.trim().length} / 10 min characters',
+                          helperStyle: TextStyle(
+                            color: _isValid
+                                ? AppColors.success
+                                : Colors.grey.shade600,
+                            fontWeight: _isValid
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: FilledButton.icon(
+                          key: const Key('submit_incident_button'),
+                          icon: const Icon(Icons.send),
+                          label: const Text('Submit Incident Report'),
+                          onPressed: _isValid
+                              ? () => _confirmAndSubmit(siteId)
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const Divider(thickness: 8, height: 24),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  'Recent Incident Reports',
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              incidentsAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: LoadingView(message: 'Loading incidents…'),
+                ),
+                error: (e, _) => Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ErrorView(
+                    message: 'Failed to load incidents: $e',
+                    onRetry: () =>
+                        ref.invalidate(_supervisorIncidentsProvider(siteId)),
+                  ),
+                ),
+                data: (incidents) {
+                  if (incidents.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: EmptyView(
+                        message: 'No safety incidents reported for this site.',
                       ),
                     );
-                  },
-                );
-              },
-            ),
-            const SizedBox(height: 32),
-          ],
+                  }
+
+                  final sorted = incidents.toList()
+                    ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+
+                  return ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    itemCount: sorted.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final inc = sorted[index];
+                      final color = _severityColor(inc.severity);
+                      final icon = _severityIcon(inc.severity);
+
+                      return Card(
+                        elevation: 1,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: color.withValues(alpha: 0.3)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(icon, color: color, size: 20),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: color.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      inc.severity.name.toUpperCase(),
+                                      style: TextStyle(
+                                        color: color,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    _formatDate(inc.occurredAt),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SyncChip(pending: inc.hasPendingWrites),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                inc.description,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

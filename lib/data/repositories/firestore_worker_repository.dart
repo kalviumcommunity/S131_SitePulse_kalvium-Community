@@ -7,10 +7,7 @@ import 'package:site_pulse/data/repositories/repository_error.dart';
 import 'package:site_pulse/data/repositories/worker_repository.dart';
 import 'package:site_pulse/data/repositories/firestore_site_repository.dart';
 
-/// Real Firestore-backed [WorkerRepository].
-///
-/// Workers live at `sites/{siteId}/workers/{workerId}`.
-/// Remove = soft-delete (set `active` to `false`).
+/// Deactivation is a soft delete so historical worker records remain available.
 class FirestoreWorkerRepository implements WorkerRepository {
   static final _uuidPattern = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
@@ -29,8 +26,6 @@ class FirestoreWorkerRepository implements WorkerRepository {
 
   CollectionReference<Map<String, dynamic>> _workersCol(String siteId) =>
       _db.collection('sites').doc(siteId).collection('workers');
-
-  // ── Reads ──────────────────────────────────────────────────────────────
 
   @override
   Stream<List<Worker>> watchWorkers(String siteId, {bool? activeOnly}) {
@@ -61,8 +56,6 @@ class FirestoreWorkerRepository implements WorkerRepository {
       (siteId) => watchWorkers(siteId),
     );
   }
-
-  // ── Writes (fire-and-forget) ───────────────────────────────────────────
 
   @override
   String saveWorker(String siteId, Worker worker) {
@@ -99,8 +92,6 @@ class FirestoreWorkerRepository implements WorkerRepository {
     );
     return workerId;
   }
-
-  // ── Error stream ───────────────────────────────────────────────────────
 
   @override
   Stream<RepositoryError> get errorStream => _errorController.stream;

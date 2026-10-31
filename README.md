@@ -169,7 +169,3 @@ The rules are covered by the tests in `rules-tests/test.js`.
 - Create feature branches from `Dev`, open pull requests into `Dev`, and merge `Dev` into `main` only for a release.
 - Data lane: work in `data/models/`, `data/repositories/`, and `data/providers.dart`; keep Firestore access in repositories.
 - UI lane: work in `features/`, use Riverpod providers, and coordinate repository-interface changes with the data lane.
-
-## Team and course context
-
-Team members: [add team names]. Course: [add course name].
